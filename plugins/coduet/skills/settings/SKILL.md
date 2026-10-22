@@ -20,7 +20,8 @@ Per ogni voce vale il livello più specifico:
 
 - **Completa** (l'utente chiede di vedere o rivedere le impostazioni): segui tutti i passi.
 - **Rapida** (l'utente chiede una modifica precisa, per esempio "metti 3 task Codex"): mostra solo quella voce, valore attuale e nuovo, e vai al Passo 6.
-- **Configurazione iniziale** (la skill `coduet-config` non esiste, o la richiama `coduet:start` al primo utilizzo): fai il Passo 3 (skill per fase); chiedi se vuole vedere anche verifiche aggiuntive e parametri (risposta proposta: no, valori di partenza); poi salva nella configurazione personale.
+- **Piani** (l'utente vuole indicare o cambiare i suoi abbonamenti, oppure la richiama `coduet:start` perché i piani non sono indicati): fai solo il Passo 3-bis, poi il Passo 6.
+- **Configurazione iniziale** (la skill `coduet-config` non esiste, o la richiama `coduet:start` al primo utilizzo): fai il Passo 3-bis (piani) e il Passo 3 (skill per fase); chiedi se vuole vedere anche verifiche aggiuntive e parametri (risposta proposta: no, valori di partenza); poi salva nella configurazione personale.
 
 ## Passo 1: leggere
 
@@ -40,6 +41,19 @@ Per ogni fase (Ideazione, Piano, Esecuzione dei task di Claude, Isolamento dei t
 2. Chiedi con AskUserQuestion, con scelta multipla: la skill attuale (se installata) proposta per prima, poi le alternative trovate (al massimo 3; l'utente può scriverne un'altra), poi "Nessuna: metodo base". Raggruppa più fasi nella stessa chiamata (al massimo 4 domande per volta).
 3. Se l'utente sceglie più skill per la stessa fase, chiedigli l'ordine e avvisalo che più skill per fase consumano più quota.
 4. Se una fase ha una sola opzione ovvia, proponila già come prima scelta, così basta confermare.
+
+## Passo 3-bis: piani e profilo
+
+1. Chiedi con AskUserQuestion:
+   - **Piano Claude**: Pro, Max, Team o Enterprise, API/Console.
+   - **Accesso Codex**: ChatGPT Free, ChatGPT Go, ChatGPT Plus, ChatGPT Pro, ChatGPT Business/Enterprise/Edu, chiave API.
+2. Prendi il profilo corrispondente dalla sezione "Profili per piano" di `coduet:start` e mostra all'utente, in una tabella, solo le voci che cambierebbero rispetto ai valori in uso (valore attuale, valore del profilo).
+3. Se una voce del profilo è in conflitto con una scelta che l'utente aveva fatto a mano in `coduet-config`, non sovrascriverla: chiedigli quale tenere.
+4. Con accesso tramite chiave API, chiedi anche il tetto di spesa per sessione (o "nessuno") e ricorda che Codex si paga a consumo.
+5. Con piano Claude Free, spiega che Claude Code non è disponibile e quindi Coduet non può funzionare.
+6. Salva i piani e i valori accettati con il Passo 6.
+
+Se l'utente cambia abbonamento in futuro, basta rifare questo passo.
 
 ## Passo 4: verifiche aggiuntive
 

@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.2.0
+
+- **Profili per piano**: Coduet si adatta agli abbonamenti dell'utente. `coduet:settings` chiede piano Claude e accesso a Codex (ChatGPT Free, Go, Plus, Pro, Business o chiave API) e propone i parametri adatti: task in parallelo, ragionamento, soglia di delega, asset di prova, rigenerazioni, immagini, tetto di spesa.
+- Il profilo Plus coincide con i valori di sempre: chi non indica i piani non vede differenze.
+- Con ChatGPT Free/Go Coduet non chiede immagini a Codex e gli affida solo task piccoli; con chiave API non pianifica riprese per quota e rispetta un tetto di spesa; con Claude Max/Team/Enterprise/API delega a Codex solo dove conviene.
+- Chi usa già Coduet riceve una sola proposta di indicare i piani, in un momento stabile; le scelte fatte a mano e le impostazioni dei progetti vengono rispettate, e il lavoro già in corso non cambia.
+
 ## 0.1.2
 
 - `coduet:start` controlla se è uscita una versione più recente di Coduet (all'avvio, all'inizio delle fasi nelle sessioni lunghe e alla fine del lavoro, al massimo una volta al giorno) e riassume le novità di tutte le versioni saltate.

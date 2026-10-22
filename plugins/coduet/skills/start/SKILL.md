@@ -41,6 +41,9 @@ Le scelte si cambiano solo con la skill `coduet:settings` (o su richiesta esplic
 
 | Parametro | Valore |
 |---|---|
+| Piano Claude | non indicato |
+| Accesso Codex | non indicato |
+| Criterio di delega a Codex | risparmio della quota di Claude |
 | Domanda iniziale sulla divisione con Codex | chiedi sempre |
 | Soglia "lavoro piccolo" (task) sotto cui proporre di non usare Codex | 4 |
 | Task Codex contemporanei, in totale su tutti i progetti | 2 |
@@ -53,11 +56,49 @@ Le scelte si cambiano solo con la skill `coduet:settings` (o su richiesta esplic
 | Controllo di Claude dopo la ripresa | attivo, dopo 20 minuti |
 | Avviso di riserva dopo la ripresa (minuti) | 40 |
 | Misure del consumo del controllo di Claude | 3 |
+| Generazione di immagini con Codex | sì |
+| Tetto di spesa Codex per sessione (solo con chiave API) | nessuno |
+
+### Profili per piano
+
+I valori di partenza qui sopra corrispondono a **Claude Pro + ChatGPT Plus**, ed equivalgono a "piano non indicato". Quando l'utente indica i suoi piani, `coduet:settings` propone di salvare nella configurazione personale i valori del profilo corrispondente; l'utente può accettarli o ritoccarli.
+
+**Accesso Codex** (valori per i parametri indicati; quelli non elencati restano i valori di partenza):
+
+| Parametro | ChatGPT Free / Go | ChatGPT Plus, Business (partenza) | ChatGPT Pro | Chiave API |
+|---|---|---|---|---|
+| Task Codex contemporanei | 1 | 2 | 3 | 2 |
+| Ragionamento Codex predefinito | low | medium | medium | medium |
+| Soglia "lavoro piccolo" | 6 | 4 | 3 | 4 |
+| Asset di prova per tipo | 1-2 | 2-3 | 3 | 2 |
+| Rigenerazioni automatiche | 1 | 2 | 3 | 1 |
+| Generazione di immagini con Codex | no | sì | sì | sì |
+| Tetto di spesa Codex per sessione | nessuno | nessuno | nessuno | da chiedere all'utente |
+
+Enterprise, Edu e piani non elencati: usa il profilo Plus, salvo indicazioni diverse dell'utente.
+
+**Piano Claude:**
+
+| Piano Claude | Criterio di delega a Codex |
+|---|---|
+| Pro (partenza) | risparmio della quota di Claude |
+| Max, Team, Enterprise, API/Console | solo dove Codex conviene |
+
+Con il piano Free di Claude, Claude Code non è disponibile: Coduet non può funzionare.
+
+**Effetti sul comportamento** (oltre ai parametri):
+- **Criterio "risparmio della quota di Claude"**: segui i criteri di assegnazione del Passo 3 così come sono.
+- **Criterio "solo dove Codex conviene"**: la quota di Claude non è il problema principale; assegna a Codex solo gli asset e i task meccanici di grande volume, il resto a Claude.
+- **Generazione di immagini = no** (ChatGPT Free/Go): non chiedere immagini a Codex; per gli asset grafici proponi grafica vettoriale o via codice, asset di libreria, oppure immagini fornite dall'utente.
+- **Accesso Codex con chiave API**: non ci sono quote che si azzerano, quindi il Passo 8 (ripresa automatica) non si usa; si paga a consumo. Tieni il conto dei token usati da Codex nella sessione (li stampa a fine task) e, se c'è un tetto di spesa, fermati e chiedi all'utente prima di superarlo.
+- **ChatGPT Free/Go**: la quota è piccola; assegna a Codex solo task piccoli e prevedi che la ripresa automatica scatti spesso.
 
 ### Come si applica la configurazione
 
 - **Ordine**: valori di partenza, poi `coduet-config`, poi `.coduet.md`. Il file del progetto sta nella radice del progetto o, se il lavoro è su più branch, nello stesso posto del piano (vedi "Dove sta il piano"). Le voci che un livello non contiene restano quelle del livello precedente.
 - **Rileggi la configurazione del progetto all'inizio di ogni fase e prima di ogni task Codex** (e all'inizio di ogni fase fai anche il controllo aggiornamenti, che si ripete al massimo una volta al giorno): così le modifiche fatte con le impostazioni valgono subito, anche per una sessione già in corso. Le modifiche alla configurazione personale valgono invece dalla ricarica successiva della skill.
+- **Piani non indicati**: se "Piano Claude" o "Accesso Codex" risultano "non indicato" e in `~/.coduet/preferenze.txt` non c'è "piani: non chiedere", proponi all'utente **una sola volta**, in una riga e in un momento stabile (all'avvio o all'inizio di una fase, mai a metà di un task), di indicarli: "Indica ora" (avvia `coduet:settings` per i piani), "Lascia così" (non chiederlo più in questa sessione), "Non chiedere più" (scrivi "piani: non chiedere" in quel file). Nelle sessioni cloud non chiederlo. In ogni caso il comportamento resta quello dei valori di partenza (profilo Plus).
+- **Lavoro già in corso**: un cambio di configurazione o di profilo vale solo da quel momento in poi. I task Codex già lanciati finiscono come sono partiti, le riprese già pianificate mantengono i loro orari, e i nuovi limiti valgono per i task lanciati dopo.
 - **Primo utilizzo**: se la skill personale `coduet-config` non esiste, all'avvio proponi all'utente in una riga di fare la configurazione iniziale con `coduet:settings` (un paio di minuti). Se preferisce di no, prosegui con i valori di partenza.
 - **Skill per fase, in tre livelli**:
   1. la skill (o le skill) indicate per quella fase, se sono installate;
@@ -289,6 +330,7 @@ Carica la skill della riga "Piano" e seguila, con queste aggiunte obbligatorie.
 Criteri di assegnazione:
 - **Claude**: architettura, logica di dominio delicata, sicurezza (autenticazione, permessi, segreti, controllo degli accessi ai dati), migrazioni del database, debug difficili, integrazione, revisione finale e tutto ciò che richiede segreti o configurazioni locali.
 - **Codex**: lavoro ripetitivo o meccanico che segue schemi già presenti nel codice, test, documentazione, testi e traduzioni, refactoring meccanici, asset (immagini, audio, video, 3D) e presentazioni.
+- Applica il parametro "Criterio di delega a Codex" (vedi "Profili per piano").
 - Con la risposta "Solo asset, test e documentazione" assegna a Codex soltanto quelle tre categorie.
 - In caso di dubbio, il task va a Claude.
 
@@ -352,7 +394,7 @@ Vale per qualsiasi asset generato da Codex: immagini, sprite, icone, audio, vide
 
 | Tipo | Come | Note |
 |---|---|---|
-| Immagini, sprite | Strumento integrato di generazione immagini (account ChatGPT a pagamento) | Da verificare alla prima prova. Sfondo trasparente poco affidabile: chiedi uno sfondo a tinta unita (#00FF00 di default, oppure il colore previsto dal progetto) e scontorna con uno script |
+| Immagini, sprite | Strumento integrato di generazione immagini (account ChatGPT a pagamento; con il parametro "Generazione di immagini con Codex" = no non usarlo) | Da verificare alla prima prova. Sfondo trasparente poco affidabile: chiedi uno sfondo a tinta unita (#00FF00 di default, oppure il colore previsto dal progetto) e scontorna con uno script |
 | Vettoriale, icone, interfacce | Codice SVG/HTML | Affidabile |
 | Audio | Codice: sintesi sonora (es. Python che scrive WAV), MIDI | Buono per effetti retro e musica semplice; non adatto ad audio realistico |
 | Video, animazioni | Fotogrammi generati via codice + ffmpeg (se installato) | Animazioni grafiche sì, video realistici no |
@@ -423,6 +465,8 @@ Nessuna delle due quote produce addebiti automatici con questa configurazione: q
 **Ripresa dopo un'interruzione.** Fai il controllo delle riprese in sospeso, leggi "Stato e passaggio di consegne", controlla `git worktree list` e i branch `codex/*`, rivedi il lavoro fatto in tua assenza e solo poi continua.
 
 ## Passo 8: quota di Codex esaurita e ripresa automatica
+
+Questo passo vale per l'accesso a Codex con account ChatGPT. Con una **chiave API** non ci sono quote che si azzerano: non pianificare riprese; segui invece il tetto di spesa (vedi "Profili per piano").
 
 Codex non riparte da solo quando la quota si azzera; il lavoro parziale resta nel worktree. Il sistema ha tre livelli:
 1. **Ripresa** con il pianificatore del sistema operativo: gratuita, parte anche se Claude ha finito la quota.
