@@ -260,8 +260,12 @@ Poi `/reload-plugins` (o apri una nuova sessione).
 
 **Aggiornamenti:**
 - **Claude Code da terminale**: gli aggiornamenti automatici sono spenti di default. Per attivarli: `/plugin` → **Marketplaces** → `coduet` → **Enable auto-update**.
-- **App desktop di Claude**: nelle impostazioni dei plugin, al momento, ci sono solo "Disattiva" e "Rimuovi", senza aggiornamento automatico. Aggiorna a mano scrivendo `/plugin marketplace update coduet` in una sessione di Code, poi `/reload-plugins` (o apri una nuova sessione).
-- In ogni caso puoi aggiornare a mano quando vuoi con `/plugin marketplace update coduet`.
+- **App desktop di Claude** (verificato): non c'è l'aggiornamento automatico, si aggiorna dal pannello dei plugin:
+  1. apri la **Directory** dei plugin (per esempio scrivendo `/plugin` in una sessione di Code) → **Plugin** → **Code**;
+  2. clicca **···** accanto all'etichetta `coduet` → **Verifica aggiornamenti**;
+  3. clicca l'**ingranaggio** sulla scheda Coduet e poi **Aggiorna**. Se l'app avvisa che verranno sovrascritti dei file `.in_use\...`, conferma: sono solo i contrassegni delle sessioni aperte, non modifiche tue;
+  4. nelle sessioni già aperte scrivi `/reload-plugins` (o aprine una nuova).
+- **Claude Code da terminale**: puoi anche aggiornare a mano quando vuoi con `/plugin marketplace update coduet`.
 
 Se lavori anche in sessioni cloud, Coduet deve essere disponibile anche lì: un modo è dichiarare il marketplace nelle impostazioni del progetto (`.claude/settings.json`), così si carica per chiunque lavori nel repository (da verificare).
 
