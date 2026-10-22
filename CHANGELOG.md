@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.3.0
+
+- **Si vede quando Codex lavora**: messaggio all'avvio di ogni task, voce nella lista delle attività, aggiornamenti brevi nei task lunghi, riepilogo alla fine (esito, file, token) e stato su richiesta ("come va Codex?").
+- **Avvio a parole**: Coduet si avvia anche scrivendo "avvia Coduet" o "dividiamo il lavoro con Codex", utile dove i comandi con la barra non funzionano (per esempio i thread di progetto). Lo stesso per le impostazioni ("impostazioni di Coduet").
+- **Lavoro in locale**: in una sessione cloud con il PC collegato, Coduet propone di impostare la cartella locale predefinita del progetto, così i thread lavorano direttamente sul PC.
+- README: come avviare Coduet nei vari contesti, quando serve una sessione nuova, come far lavorare un progetto in locale.
+
 ## 0.2.1
 
 - Il controllo aggiornamenti si fa sempre a ogni avvio di `coduet:start` (il limite di uno al giorno resta solo per i controlli a metà sessione), così una versione pubblicata in giornata si vede subito. Su richiesta dell'utente controlla subito.
