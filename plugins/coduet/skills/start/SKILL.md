@@ -57,7 +57,7 @@ Le scelte si cambiano solo con la skill `coduet:settings` (o su richiesta esplic
 ### Come si applica la configurazione
 
 - **Ordine**: valori di partenza, poi `coduet-config`, poi `.coduet.md`. Il file del progetto sta nella radice del progetto o, se il lavoro è su più branch, nello stesso posto del piano (vedi "Dove sta il piano"). Le voci che un livello non contiene restano quelle del livello precedente.
-- **Rileggi la configurazione del progetto all'inizio di ogni fase e prima di ogni task Codex**: così le modifiche fatte con le impostazioni valgono subito, anche per una sessione già in corso. Le modifiche alla configurazione personale valgono invece dalla ricarica successiva della skill.
+- **Rileggi la configurazione del progetto all'inizio di ogni fase e prima di ogni task Codex** (e all'inizio di ogni fase fai anche il controllo aggiornamenti, che si ripete al massimo una volta al giorno): così le modifiche fatte con le impostazioni valgono subito, anche per una sessione già in corso. Le modifiche alla configurazione personale valgono invece dalla ricarica successiva della skill.
 - **Primo utilizzo**: se la skill personale `coduet-config` non esiste, all'avvio proponi all'utente in una riga di fare la configurazione iniziale con `coduet:settings` (un paio di minuti). Se preferisce di no, prosegui con i valori di partenza.
 - **Skill per fase, in tre livelli**:
   1. la skill (o le skill) indicate per quella fase, se sono installate;
@@ -81,7 +81,44 @@ Le scelte si cambiano solo con la skill `coduet:settings` (o su richiesta esplic
 
 ## Prima di tutto: configurazione e riprese in sospeso
 
-A ogni avvio o ripresa della skill, **per prima cosa** leggi la configurazione (valori di partenza, `coduet-config`, `.coduet.md`) e controlla che le skill di fase siano disponibili. Poi, se nel piano la riga "Codex in attesa di quota" non è "nessuno", oppure esistono file `.codex-ripresa.log` nei worktree `../<progetto>-codex-*`, applica il Passo 8.6 prima di proseguire (in una sessione cloud, che non vede i file sul PC, basati solo sullo stato scritto nel piano). Se esiste `assets/_bozze/anteprima.html` con asset in attesa di approvazione, ricordalo all'utente. Se in `docs/codex-registro.md` ci sono "Proposte per migliorare Coduet" non ancora discusse, ricordale all'utente in una riga.
+A ogni avvio o ripresa della skill, **per prima cosa** leggi la configurazione (valori di partenza, `coduet-config`, `.coduet.md`), controlla che le skill di fase siano disponibili e fai il controllo aggiornamenti (vedi "Controllo aggiornamenti di Coduet"). Poi, se nel piano la riga "Codex in attesa di quota" non è "nessuno", oppure esistono file `.codex-ripresa.log` nei worktree `../<progetto>-codex-*`, applica il Passo 8.6 prima di proseguire (in una sessione cloud, che non vede i file sul PC, basati solo sullo stato scritto nel piano). Se esiste `assets/_bozze/anteprima.html` con asset in attesa di approvazione, ricordalo all'utente. Se in `docs/codex-registro.md` ci sono "Proposte per migliorare Coduet" non ancora discusse, ricordale all'utente in una riga.
+
+## Controllo aggiornamenti di Coduet
+
+Prima di tutto, nelle sessioni sul PC, verifica che l'aggiornamento dalla chat sia possibile ("Comando `claude` sul PC", qui sotto).
+
+Il controllo si fa in tre momenti: all'avvio della skill, all'inizio di ogni fase nelle sessioni lunghe, e alla fine del lavoro (Passo 9). **Mai più di un controllo al giorno**, e mai più di un avviso per sessione, a meno che nel frattempo esca una versione ancora più nuova.
+
+1. **Versione installata**: con `claude plugin list` (riga `Version` del plugin `coduet@<marketplace>`), oppure leggendo `.claude-plugin/plugin.json` nella cartella del plugin (due livelli sopra la cartella di questa skill).
+2. **Ultimo controllo**: leggi `~/.coduet/ultimo-controllo.txt` (data e ultima versione trovata). Se il controllo di oggi è già stato fatto, usa la versione salvata senza ripetere la richiesta.
+3. **Versione più recente**: leggi il campo `repository` di `plugin.json` e scarica `https://raw.githubusercontent.com/<proprietario>/<repository>/main/plugins/coduet/.claude-plugin/plugin.json`; per le novità scarica allo stesso modo `CHANGELOG.md` dalla radice del repository. Salva data e versione in `~/.coduet/ultimo-controllo.txt`.
+4. **Se il controllo non riesce** (nessuna connessione, rete bloccata, file non trovato): non dire niente e prosegui.
+5. **Se c'è una versione più recente**, avvisa l'utente in poche righe: versione installata, versione nuova, quante versioni ha saltato, e le novità principali di tutte le versioni saltate (dal CHANGELOG). Poi chiedi con AskUserQuestion: "Aggiorna ora" oppure "Più tardi". Il lavoro non si blocca in nessun caso.
+6. **"Aggiorna ora"**, secondo come è installato Coduet:
+   - **Comando `claude` disponibile sul PC** (`claude --version` funziona): esegui `claude plugin marketplace update <marketplace>` e poi `claude plugin update coduet@<marketplace>`, con il nome del marketplace preso da `claude plugin list`. Controlla con `claude plugin list` che la versione sia cambiata.
+   - **Marketplace da una cartella locale** (lo vedi con `claude plugin marketplace list`): esegui `git pull` in quella cartella.
+   - **Comando `claude` non disponibile**: proponi di installarlo ora (vedi sotto); se l'utente non vuole, spiegagli che può aggiornare dal pannello dei plugin dell'app: Directory → Plugin → Code → `···` accanto al marketplace → Verifica aggiornamenti → ingranaggio su Coduet → Aggiorna.
+   - **Sessione cloud**: non aggiornare; di' solo che la versione nuova esiste.
+7. **Dopo l'aggiornamento** di' all'utente di scrivere `/reload-plugins` (oppure di aprire una nuova sessione): fino ad allora questa sessione continua con le istruzioni già caricate. Ricorda anche che l'aggiornamento vale per tutte le sessioni sul PC.
+8. **"Più tardi"**: prosegui; ricordalo in una riga solo alla fine del lavoro (Passo 9).
+
+Non aggiornare mai senza il consenso esplicito dell'utente.
+
+### Comando `claude` sul PC
+
+L'aggiornamento dalla chat richiede il comando `claude` da terminale (Claude Code CLI). L'app desktop di Claude non lo installa, ma usa la stessa configurazione (`~/.claude`), quindi un plugin aggiornato da terminale risulta aggiornato anche nell'app (verificato).
+
+1. **Controllo**, solo nelle sessioni sul PC: esegui `claude --version`. Se non risponde, prova anche il percorso dell'installazione standard (Windows: `$env:USERPROFILE\.local\bin\claude.exe --version`; macOS e Linux: `~/.local/bin/claude --version`): se lì risponde, il comando c'è ma la sua cartella non è nel PATH (vai al punto 4).
+2. **Se manca**, e in `~/.coduet/claude-cli.txt` non c'è scritto "non chiedere", chiedi con AskUserQuestion: "Installa ora (consigliato)", "Più tardi", "Non chiedere più". Spiega in una riga a cosa serve: aggiornare Coduet dalla chat invece che dai menu. Con "Non chiedere più" scrivi "non chiedere" in quel file; con "Più tardi" richiedilo solo alla sessione successiva.
+3. **Installazione**, solo con il consenso dell'utente, con il comando ufficiale:
+   - Windows (PowerShell): `irm https://claude.ai/install.ps1 | iex`
+   - macOS e Linux: `curl -fsSL https://claude.ai/install.sh | bash`
+4. **PATH**: se l'installazione avvisa che la cartella non è nel PATH, aggiungila per l'utente, solo se non c'è già:
+   - Windows: `$d = "$env:USERPROFILE\.local\bin"; $p = [Environment]::GetEnvironmentVariable("Path","User"); if (($p -split ';') -notcontains $d) { [Environment]::SetEnvironmentVariable("Path", "$p;$d", "User") }`
+   - macOS e Linux: aggiungi `export PATH="$HOME/.local/bin:$PATH"` al file di avvio della shell dell'utente, se manca.
+5. **Verifica** con il percorso completo (vale anche prima che il nuovo PATH sia attivo): `<percorso>/claude --version` e `<percorso>/claude plugin list`, dove deve comparire Coduet. Fino al riavvio dell'app, usa il percorso completo per i comandi di aggiornamento.
+6. **Avvisa l'utente** che, per far vedere il comando `claude` a tutte le sessioni, va chiusa e riaperta l'app di Claude (e i terminali aperti).
+7. Se l'installazione non riesce, spiega il motivo in breve, indica la [guida ufficiale](https://code.claude.com/docs/en/setup) e prosegui con il lavoro.
 
 ## Passo preliminare: dove si trova il progetto
 
@@ -522,6 +559,7 @@ Alla fine del lavoro (o quando l'utente chiude la sessione, o al passaggio di co
    - **scelte e valori** (skill per fase, verifiche, parametri): si cambiano con `coduet:settings`, per il progetto o nella configurazione personale;
    - **regole di lavoro**: appartengono al plugin, che non va modificato localmente. Proponi all'utente un testo pronto da inviare come segnalazione (issue) al repository del plugin, indicato nel suo `plugin.json` alla voce `repository`; se l'utente mantiene il plugin, proponigli la modifica direttamente nel repository del plugin, con un nuovo numero di versione.
 4. Se non è il momento, annota le proposte in `docs/codex-registro.md`, sezione "Proposte per migliorare Coduet", e riproponile all'utilizzo successivo.
+5. Fai il controllo aggiornamenti; se c'è una versione più recente che l'utente ha rimandato, ricordaglielo in una riga e proponi di aggiornare prima del prossimo lavoro.
 
 ## Da verificare sul campo (quando lo verifichi, annotalo come proposta del Passo 9)
 

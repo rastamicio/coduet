@@ -63,7 +63,18 @@ Se `coduet-config` viene salvata solo sul PC (succede, per esempio, nell'app des
 
 ## Aggiornamenti
 
-- **Claude Code da terminale**: gli aggiornamenti automatici sono spenti di default. Per attivarli: `/plugin` → **Marketplaces** → `coduet` → **Enable auto-update**.
+**Avviso automatico.** Quando usi `/coduet:start`, Coduet controlla (al massimo una volta al giorno) se è uscita una versione più recente, ti riassume le novità e ti chiede se aggiornare.
+
+**Aggiornamento dalla chat (consigliato).** Se sul PC è disponibile il comando `claude` da terminale, rispondi "Aggiorna ora" e Coduet si aggiorna da solo per tutte le sessioni; poi scrivi `/reload-plugins`. Se il comando manca, Coduet se ne accorge e ti propone di installarlo lui, una volta sola, con il tuo ok. Per installarlo a mano:
+
+- Windows (PowerShell): `irm https://claude.ai/install.ps1 | iex`. Se l'installazione avvisa che la cartella non è nel PATH, aggiungila con:
+  `[Environment]::SetEnvironmentVariable("Path", [Environment]::GetEnvironmentVariable("Path","User") + ";$env:USERPROFILE\.local\bin", "User")`
+  poi riapri PowerShell e l'app di Claude.
+- macOS e Linux: `curl -fsSL https://claude.ai/install.sh | bash`
+
+Verifica con `claude plugin list`: deve comparire `coduet@coduet`.
+
+**Senza il comando `claude`:**
 - **App desktop di Claude** (verificato): non c'è l'aggiornamento automatico, si aggiorna dal pannello dei plugin:
   1. apri la **Directory** dei plugin (per esempio scrivendo `/plugin` in una sessione di Code) → **Plugin** → **Code**;
   2. clicca **···** accanto all'etichetta `coduet` → **Verifica aggiornamenti**;
@@ -80,7 +91,8 @@ Le novità di ogni versione sono nel [CHANGELOG](CHANGELOG.md).
 - I segreti (`.env` e simili) non passano mai da chat, piano, prompt o git, e Codex riceve l'istruzione di non leggerli.
 - La ripresa automatica crea **attività pianificate sul tuo PC** che lanciano script scritti nel worktree del task; sono leggibili e si rimuovono da sole dopo l'esecuzione.
 - Il codice del progetto viene inviato sia ad Anthropic sia a OpenAI. Per codice riservato valuta prima, e controlla nelle impostazioni dei due servizi l'uso dei dati per l'addestramento.
-- Coduet è fatto di istruzioni in testo: leggile prima di installarlo. Se attivi l'aggiornamento automatico, ti fidi anche delle versioni future.
+- Il controllo aggiornamenti legge due file pubblici dal repository di Coduet su GitHub (`plugin.json` e `CHANGELOG.md`), al massimo una volta al giorno; non invia nessun dato del progetto. Gli aggiornamenti, e l'eventuale installazione del comando `claude`, avvengono solo con il tuo ok.
+- Coduet è fatto di istruzioni in testo: leggile prima di installarlo. Aggiornando, ti fidi anche delle versioni future.
 
 ## Contribuire
 

@@ -258,7 +258,9 @@ In una sessione di Claude Code:
 
 Poi `/reload-plugins` (o apri una nuova sessione).
 
-**Aggiornamenti:**
+**Aggiornamenti:** quando usi `/coduet:start`, Coduet controlla al massimo una volta al giorno se c'è una versione nuova, ti riassume le novità e, con il tuo ok, si aggiorna da solo dalla chat (poi scrivi `/reload-plugins`). Per farlo serve il comando `claude` da terminale: se manca, Coduet ti propone di installarlo lui, una volta sola. Per installarlo a mano su Windows: `irm https://claude.ai/install.ps1 | iex` in PowerShell, poi aggiungi `%USERPROFILE%\.local\bin` al PATH se l'installazione lo chiede, e riapri l'app di Claude.
+
+Senza il comando `claude`:
 - **Claude Code da terminale**: gli aggiornamenti automatici sono spenti di default. Per attivarli: `/plugin` → **Marketplaces** → `coduet` → **Enable auto-update**.
 - **App desktop di Claude** (verificato): non c'è l'aggiornamento automatico, si aggiorna dal pannello dei plugin:
   1. apri la **Directory** dei plugin (per esempio scrivendo `/plugin` in una sessione di Code) → **Plugin** → **Code**;
