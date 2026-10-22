@@ -154,7 +154,7 @@ Le impostazioni sono:
 | Livello | Dove sta | Chi lo cambia |
 |---|---|---|
 | Valori di partenza | Dentro il plugin | Solo chi mantiene il plugin, con un aggiornamento |
-| Configurazione personale | Skill personale `coduet-config` nel tuo account (visibile sul PC e nel cloud) | Tu, con `/coduet:settings` → "salva nella mia configurazione personale" |
+| Configurazione personale | Skill personale `coduet-config`: nel tuo account (visibile sul PC e nel cloud) se la sessione può salvarla lì, altrimenti solo sul PC | Tu, con `/coduet:settings` → "salva nella mia configurazione personale" |
 | Configurazione del progetto | File `.coduet.md` nel progetto | Tu, con `/coduet:settings` → "salva per questo progetto" |
 
 Vale sempre il livello più specifico. Gli aggiornamenti del plugin non toccano mai la configurazione personale né quella dei progetti. Le modifiche al progetto valgono subito anche per una sessione in corso, perché `coduet:start` rilegge la configurazione all'inizio di ogni fase; quelle personali valgono dalla ricarica successiva.
@@ -256,7 +256,12 @@ In una sessione di Claude Code:
 /plugin install coduet@coduet
 ```
 
-Poi `/reload-plugins` (o apri una nuova sessione). Per ricevere gli aggiornamenti in automatico: `/plugin` → **Marketplaces** → `coduet` → **Enable auto-update**. Altrimenti aggiorna quando vuoi con `/plugin marketplace update coduet`.
+Poi `/reload-plugins` (o apri una nuova sessione).
+
+**Aggiornamenti:**
+- **Claude Code da terminale**: gli aggiornamenti automatici sono spenti di default. Per attivarli: `/plugin` → **Marketplaces** → `coduet` → **Enable auto-update**.
+- **App desktop di Claude**: nelle impostazioni dei plugin, al momento, ci sono solo "Disattiva" e "Rimuovi", senza aggiornamento automatico. Aggiorna a mano scrivendo `/plugin marketplace update coduet` in una sessione di Code, poi `/reload-plugins` (o apri una nuova sessione).
+- In ogni caso puoi aggiornare a mano quando vuoi con `/plugin marketplace update coduet`.
 
 Se lavori anche in sessioni cloud, Coduet deve essere disponibile anche lì: un modo è dichiarare il marketplace nelle impostazioni del progetto (`.claude/settings.json`), così si carica per chiunque lavori nel repository (da verificare).
 

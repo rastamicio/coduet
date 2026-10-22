@@ -13,7 +13,7 @@ Rispondi nella lingua dell'utente, con frasi semplici.
 
 Per ogni voce vale il livello più specifico:
 1. **Valori di partenza**: la sezione "Configurazione" della skill `coduet:start`, dentro il plugin. Si leggono, non si modificano: cambiano solo con un aggiornamento del plugin.
-2. **Configurazione personale**: la skill personale `coduet-config` dell'utente, nel suo account (la vedono sia le sessioni sul PC sia quelle cloud). Contiene solo le voci che l'utente ha cambiato rispetto ai valori di partenza.
+2. **Configurazione personale**: la skill personale `coduet-config` dell'utente. Se è salvata nel suo account la vedono sia le sessioni sul PC sia quelle cloud; se è salvata solo sul PC (`~/.claude/skills/coduet-config/SKILL.md`) la vedono solo le sessioni su quel PC. Contiene solo le voci che l'utente ha cambiato rispetto ai valori di partenza.
 3. **Configurazione del progetto**: il file `.coduet.md` del progetto, nella radice oppure, se il lavoro è su più branch, nello stesso posto del piano (branch `coordinamento`). Contiene solo le voci che il progetto cambia.
 
 ## Modalità
@@ -56,7 +56,10 @@ Mostra la tabella dei parametri con una spiegazione di una riga ciascuno e chied
 
 Mostra il riepilogo delle modifiche (valore vecchio, valore nuovo) e chiedi con AskUserQuestion:
 - **Salva per questo progetto**: scrivi o aggiorna `.coduet.md` con le sole voci cambiate. Mettilo dove lo vedono tutte le sessioni del progetto (radice, oppure branch `coordinamento` se il lavoro è su più branch) e invialo sul repository remoto. Le sessioni in corso lo applicano dall'inizio della fase successiva.
-- **Salva nella mia configurazione personale**: proponi la versione completa aggiornata della skill personale `coduet-config` (nuova se non esiste, aggiornamento se esiste) con lo strumento previsto per salvare le skill, usando il modello qui sotto. Vale dalle prossime sessioni in tutti i progetti, tranne per le voci che un progetto cambia nel suo `.coduet.md`; per una sessione già in corso, dai all'utente il prompt per ricaricare `coduet:start`.
+- **Salva nella mia configurazione personale**: scrivi la versione completa aggiornata della skill personale `coduet-config` (nuova se non esiste, aggiornamento se esiste), usando il modello qui sotto. Vale dalle prossime sessioni in tutti i progetti, tranne per le voci che un progetto cambia nel suo `.coduet.md`; per una sessione già in corso, dai all'utente il prompt per ricaricare `coduet:start`. Dove salvarla:
+  - **Nell'account**, se la sessione ha uno strumento per proporre o salvare skill nell'account dell'utente: usalo. Così vale ovunque, sul PC e nel cloud.
+  - **Solo sul PC**, se quello strumento non c'è (per esempio nell'app desktop): scrivi il file `~/.claude/skills/coduet-config/SKILL.md`. Poi **dillo chiaramente all'utente**: questa configurazione la vedono solo le sessioni su questo PC; le sessioni cloud e gli altri computer usano i valori di partenza. Se le scelte salvate differiscono dai valori di partenza e l'utente lavora anche nel cloud, spiegagli che può aggiungere la stessa skill al suo account dalle impostazioni dell'app (sezione delle skill), caricando quel file o creando una skill `coduet-config` con lo stesso contenuto, e che dopo ogni modifica dovrà aggiornare anche quella copia. Se le scelte coincidono con i valori di partenza, basta dirgli che per ora nel cloud non cambia nulla.
+  - Se esistono **due copie** (account e PC), aggiorna quella che stai usando e ricorda all'utente di allineare l'altra.
 - **Annulla**: non cambiare niente.
 
 Se l'utente sceglie "per questo progetto" ma non sei in un progetto, diglielo e proponi le altre due opzioni.

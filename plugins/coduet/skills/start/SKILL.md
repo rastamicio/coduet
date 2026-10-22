@@ -15,7 +15,7 @@ Rispondi nella lingua dell'utente. L'utente descrive il progetto e risponde alle
 
 Le scelte modificabili hanno tre livelli; per ogni voce vale il livello più specifico:
 1. **Valori di partenza**: le tabelle qui sotto, che arrivano con il plugin e cambiano solo con un aggiornamento del plugin.
-2. **Configurazione personale**: la skill personale `coduet-config` dell'utente, se esiste. Contiene solo le voci che l'utente ha cambiato. Caricala con il tool Skill (oppure leggine il `SKILL.md`).
+2. **Configurazione personale**: la skill personale `coduet-config` dell'utente, se esiste: nel suo account oppure, solo su quel PC, in `~/.claude/skills/coduet-config/SKILL.md`. Contiene solo le voci che l'utente ha cambiato. Caricala con il tool Skill (oppure leggine il `SKILL.md`). In una sessione cloud una copia salvata solo sul PC non è visibile: in quel caso valgono i valori di partenza.
 3. **Configurazione del progetto**: il file `.coduet.md` del progetto, se esiste (vedi "Come si applica la configurazione").
 
 Le scelte si cambiano solo con la skill `coduet:settings` (o su richiesta esplicita dell'utente), mai durante il lavoro di propria iniziativa. Non modificare mai i file del plugin.
