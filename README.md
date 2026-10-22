@@ -54,14 +54,20 @@ Per ogni voce vale il livello più specifico:
 | Livello | Dove sta |
 |---|---|
 | Valori di partenza | Dentro il plugin |
-| Configurazione personale | Skill personale `coduet-config` nel tuo account, creata da `/coduet:settings` |
+| Configurazione personale | Skill personale `coduet-config`, creata da `/coduet:settings`: nel tuo account se la sessione può salvarla lì, altrimenti solo sul PC (vedi sotto) |
 | Configurazione del progetto | File `.coduet.md` nel progetto |
 
 Gli aggiornamenti del plugin non toccano mai la tua configurazione personale né quella dei progetti.
 
+Se `coduet-config` viene salvata solo sul PC (succede, per esempio, nell'app desktop), le sessioni cloud e gli altri computer non la vedono e usano i valori di partenza. `/coduet:settings` te lo segnala e ti spiega come caricarla anche nel tuo account.
+
 ## Aggiornamenti
 
-Gli aggiornamenti automatici sono spenti di default. Per attivarli: `/plugin` → **Marketplaces** → `coduet` → **Enable auto-update**. Altrimenti aggiorna quando vuoi con `/plugin marketplace update coduet`. Le novità sono nel [CHANGELOG](CHANGELOG.md).
+- **Claude Code da terminale**: gli aggiornamenti automatici sono spenti di default. Per attivarli: `/plugin` → **Marketplaces** → `coduet` → **Enable auto-update**.
+- **App desktop di Claude**: nelle impostazioni dei plugin, al momento, ci sono solo "Disattiva" e "Rimuovi", senza aggiornamento automatico. Aggiorna a mano scrivendo `/plugin marketplace update coduet` in una sessione di Code, poi `/reload-plugins` (o apri una nuova sessione).
+- In ogni caso puoi aggiornare a mano quando vuoi con `/plugin marketplace update coduet`.
+
+Le novità di ogni versione sono nel [CHANGELOG](CHANGELOG.md).
 
 ## Sicurezza e privacy
 

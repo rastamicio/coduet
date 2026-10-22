@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.1
+
+- `coduet:start` e `coduet:settings`: se la configurazione personale `coduet-config` può essere salvata solo sul PC (per esempio nell'app desktop), lo dice chiaramente e spiega come portarla anche nell'account, così da valere anche nelle sessioni cloud.
+- README e guida: istruzioni per gli aggiornamenti nell'app desktop, dove l'aggiornamento automatico non è disponibile e si aggiorna con `/plugin marketplace update coduet`.
+
 ## 0.1.0
 
 Prima versione pubblica.
