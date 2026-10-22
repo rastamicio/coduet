@@ -19,8 +19,17 @@ Coduet è un plugin per Claude Code. Claude fa da regista (architettura, logica 
 
 ## Requisiti
 
-- Claude Code (terminale o app desktop) con un piano Claude a pagamento.
-- [Codex CLI](https://developers.openai.com/codex) installato **sul PC** e collegato a un account ChatGPT (consigliato Plus o superiore: con Free la quota è minima e non c'è la generazione di immagini).
+- Claude Code (terminale o app desktop) con un piano Claude a pagamento (Pro, Max, Team, Enterprise o API): con il piano Free di Claude, Claude Code non è disponibile.
+- [Codex CLI](https://developers.openai.com/codex) installato **sul PC**, collegato a un account ChatGPT o a una chiave API.
+
+| Accesso Codex | Come lavora Coduet |
+|---|---|
+| ChatGPT Free / Go | Funziona in modo ridotto: un task alla volta, solo task piccoli, niente immagini generate da Codex |
+| ChatGPT Plus / Business | Configurazione di partenza |
+| ChatGPT Pro | Più task in parallelo e task più grandi |
+| Chiave API | Nessuna quota ma costo a consumo, con tetto di spesa per sessione |
+
+Indica i tuoi piani con `/coduet:settings` e Coduet propone i parametri adatti.
 - `git`. Un repository remoto (GitHub, GitLab...) è necessario solo per la modalità ibrida cloud + PC.
 - Facoltativo: il plugin Superpowers. Senza, Coduet usa un metodo base per ogni fase.
 
@@ -58,6 +67,8 @@ Per ogni voce vale il livello più specifico:
 | Configurazione del progetto | File `.coduet.md` nel progetto |
 
 Gli aggiornamenti del plugin non toccano mai la tua configurazione personale né quella dei progetti.
+
+**Profili per piano**: in `/coduet:settings` puoi indicare il tuo piano Claude e il tuo accesso a Codex; Coduet propone i valori adatti (vedi Requisiti). Senza indicazioni vale il profilo Plus.
 
 Se `coduet-config` viene salvata solo sul PC (succede, per esempio, nell'app desktop), le sessioni cloud e gli altri computer non la vedono e usano i valori di partenza. `/coduet:settings` te lo segnala e ti spiega come caricarla anche nel tuo account.
 

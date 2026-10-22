@@ -159,6 +159,17 @@ Le impostazioni sono:
 
 Vale sempre il livello più specifico. Gli aggiornamenti del plugin non toccano mai la configurazione personale né quella dei progetti. Le modifiche al progetto valgono subito anche per una sessione in corso, perché `coduet:start` rilegge la configurazione all'inizio di ogni fase; quelle personali valgono dalla ricarica successiva.
 
+**Profili per piano.** Coduet è tarato su Claude Pro + ChatGPT Plus. Con `/coduet:settings` puoi indicare il tuo piano Claude e il tuo accesso a Codex, e Coduet propone i parametri adatti:
+
+| Accesso Codex | Task in parallelo | Ragionamento | Immagini da Codex | Note |
+|---|---|---|---|---|
+| ChatGPT Free / Go | 1 | low | no | Solo task piccoli; la ripresa automatica scatta spesso |
+| ChatGPT Plus / Business | 2 | medium | sì | Valori di partenza |
+| ChatGPT Pro | 3 | medium | sì | Task più grandi |
+| Chiave API | 2 | medium | sì | Niente quote, costo a consumo, tetto di spesa per sessione |
+
+Con Claude Max, Team, Enterprise o API la quota di Claude conta meno, quindi Coduet affida a Codex solo gli asset e i task meccanici di grande volume. Con il piano Free di Claude, Claude Code non è disponibile. Chi non indica i piani resta sul profilo Plus.
+
 Al primo utilizzo `coduet:start` propone la configurazione iniziale. Se una skill scelta per una fase non c'è (mai installata, disinstallata, rinominata), Coduet avvisa e usa un **metodo base** minimo per quella fase, finché non se ne sceglie un'altra. Per la parte Codex valgono sempre le regole di Coduet, anche se una skill di fase dice diversamente; e Coduet non modifica mai altre skill né i propri file.
 
 ### Coduet migliora a ogni utilizzo
