@@ -1,0 +1,13 @@
+{
+  "name": "coduet",
+  "version": "0.1.0",
+  "description": "Dividi il lavoro di un progetto tra Claude Code e Codex CLI: piano condiviso, esecuzione in parallelo, revisione, passaggio di consegne e ripresa automatica. Progetto indipendente, non affiliato ad Anthropic o OpenAI.",
+  "author": {
+    "name": "rastamicio",
+    "url": "https://github.com/rastamicio"
+  },
+  "homepage": "https://github.com/rastamicio/coduet",
+  "repository": "https://github.com/rastamicio/coduet",
+  "license": "MIT",
+  "keywords": ["codex", "workflow", "collaborazione", "pianificazione"]
+}

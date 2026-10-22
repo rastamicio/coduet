@@ -1,0 +1,15 @@
+{
+  "name": "coduet",
+  "description": "Marketplace del plugin Coduet",
+  "owner": {
+    "name": "rastamicio",
+    "url": "https://github.com/rastamicio"
+  },
+  "plugins": [
+    {
+      "name": "coduet",
+      "source": "./plugins/coduet",
+      "description": "Dividi il lavoro di un progetto tra Claude Code e Codex CLI."
+    }
+  ]
+}
