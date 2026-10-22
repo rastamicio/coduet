@@ -1,6 +1,6 @@
 ---
 name: settings
-description: Usa quando l'utente vuole vedere o cambiare le impostazioni di Coduet (skill per fase, verifiche aggiuntive, parametri), per la configurazione iniziale, o per salvarle per un progetto o nella sua configurazione personale.
+description: Usa quando l'utente scrive "impostazioni di Coduet", "coduet settings" o simili, o vuole vedere o cambiare le impostazioni di Coduet (skill per fase, verifiche aggiuntive, parametri), per la configurazione iniziale, o per salvarle per un progetto o nella sua configurazione personale.
 ---
 
 # Coduet: settings

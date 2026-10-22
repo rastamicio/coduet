@@ -1,6 +1,6 @@
 ---
 name: start
-description: Usa all'avvio di un progetto, o in un progetto in corso quando l'utente vuole dividere il lavoro con Codex: chiede se dividerlo e coordina piano, esecuzione parallela, revisione, consegne e ripresa automatica.
+description: Usa quando l'utente scrive "avvia Coduet", "coduet start", "dividiamo il lavoro con Codex" o simili, all'avvio di un progetto o in un progetto in corso: chiede se dividere il lavoro con Codex e coordina piano, esecuzione parallela, revisione, consegne e ripresa automatica.
 ---
 
 # Coduet: start (Claude Code + Codex)
@@ -173,8 +173,15 @@ Poi capisci in quale situazione sei:
 |---|---|---|
 | A. Sessione sul PC, progetto già nella cartella | `codex --version` funziona e la cartella contiene il progetto (repository git) | Fai i controlli della copia locale (sotto), poi prosegui |
 | B. Sessione sul PC, progetto solo su GitHub (finora sviluppato in cloud) | `codex` funziona, ma la cartella è vuota o non contiene il progetto | Scarica il progetto (sotto), poi prosegui |
-| C. Sessione cloud che può avviare sessioni sul PC | Sei in un ambiente cloud (Linux) e puoi avviare una sessione sul PC dell'utente o eseguire comandi lì | Modalità ibrida (sotto) |
+| C. Sessione cloud che può avviare sessioni sul PC | Sei in un ambiente cloud (Linux) e puoi avviare una sessione sul PC dell'utente o eseguire comandi lì | Proponi prima il lavoro in locale (sotto); altrimenti modalità ibrida |
 | D. Sessione cloud non collegata al PC | Ambiente cloud senza accesso al PC | Codex non è raggiungibile: dillo all'utente e proponi di collegare il PC o di aprire una sessione sul PC; altrimenti prosegui senza Codex |
+
+### Proporre il lavoro in locale (situazione C)
+
+Lavorare direttamente in una sessione sul PC è più semplice e completo della modalità ibrida. Se sei in una sessione cloud di un progetto ma il PC dell'utente è collegato, proponi in poche righe, una volta per progetto:
+- di impostare nel progetto una **cartella locale predefinita** sul PC (nelle impostazioni del progetto, sezione dell'ambiente locale: aggiungere la cartella della copia del progetto e renderla predefinita), così i thread del progetto lavorano direttamente lì;
+- oppure di aprire una sessione di Code sul PC in quella cartella.
+I nomi dei menu possono cambiare tra le versioni dell'app: descrivi lo scopo, non solo il percorso. Se l'utente preferisce restare nel cloud, prosegui con la modalità ibrida.
 
 ### Regola d'oro: GitHub è la copia di riferimento
 
@@ -375,6 +382,17 @@ codex exec --cd "<worktree>" --sandbox workspace-write -c model_reasoning_effort
 4. Al massimo il numero indicato dal parametro "Task Codex contemporanei" (di partenza 2), **in totale su tutti i progetti** dell'utente, perché la quota Codex è una sola: controlla e aggiorna il registro globale (vedi "Registro globale di Codex").
 5. Mentre Codex lavora, esegui i task di Claude con la skill della riga "Esecuzione". Non restare in attesa.
 6. Aggiorna la sezione "Stato e passaggio di consegne" a ogni traguardo, non solo alla fine.
+
+### Far vedere che Codex sta lavorando
+
+L'utente non vede Codex: senza segnali sembra che tutto sia fermo. Quindi:
+1. **All'avvio di ogni task Codex**, scrivi un messaggio breve: quale task, ora di avvio, cosa aspettarsi, e che l'utente può continuare a scriverti. Esempio: "Codex sta lavorando su: test della pagina Online (avviato alle 17:12). Ti aggiorno quando finisce; intanto puoi scrivermi."
+2. **Lista delle attività**: se la sessione ha uno strumento per la lista delle attività, crea una voce per ogni task Codex ("Codex: <task>") in corso, e segnala completata, bloccata o in attesa di quota quando cambia stato.
+3. **Aggiornamenti nei task lunghi**: se un task dura più di qualche minuto e non stai facendo altro di visibile, controlla ogni 3-5 minuti le ultime righe di `.codex-output.txt` e, solo se c'è un passo nuovo, scrivi una riga su cosa sta facendo Codex (per esempio "sta eseguendo i test", "sta modificando 3 file"). Usa gli strumenti di attesa o di monitoraggio della sessione, se ci sono, invece di aspettare in silenzio. Niente aggiornamenti ripetitivi.
+4. **Se sei in attesa** di Codex e non hai altro da fare, dillo esplicitamente: "Sto aspettando Codex (<task>, da N minuti)."
+5. **Alla fine di ogni task**, una riga di riepilogo: esito, file modificati (`git diff --stat` nel worktree), token usati, e il passo successivo (di solito la revisione).
+6. **Su richiesta** ("come va Codex?" o simili), mostra lo stato di tutti i task Codex attivi: dal registro globale, dallo stato nel piano e dalle ultime righe dei rispettivi output.
+7. **Nella modalità ibrida**, l'Esecutore sul PC scrive lo stato nel piano; la sessione cloud lo legge con `git fetch` e riporta gli stessi aggiornamenti all'utente.
 
 ### Registro globale di Codex (più progetti insieme)
 

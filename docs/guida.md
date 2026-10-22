@@ -286,7 +286,11 @@ Se lavori anche in sessioni cloud, Coduet deve essere disponibile anche lì: un 
 
 - **Progetto nuovo**: `/coduet:start` seguito dall'idea, in linguaggio normale.
 - **Progetto in corso**: lo stesso comando, oppure "dividiamo il lavoro con Codex".
-- **Impostazioni**: `/coduet:settings`, oppure "cambia le impostazioni di Coduet" (anche per una sola modifica, come "metti 3 task Codex").
+- **Impostazioni**: `/coduet:settings`, oppure "impostazioni di Coduet" (anche per una sola modifica, come "metti 3 task Codex").
+- **Nei thread di un progetto** i comandi con la barra non vengono eseguiti: scrivi "avvia Coduet" e "impostazioni di Coduet".
+- **Dopo installazione o aggiornamento** apri una sessione o un thread nuovo.
+- **Per far lavorare un progetto sul PC**: impostazioni del progetto → Ambiente → Locale → aggiungi la cartella della copia del progetto e rendila predefinita.
+- **Mentre Codex lavora** Coduet te lo dice (messaggio all'avvio, lista delle attività, aggiornamenti, riepilogo); chiedi "come va Codex?" quando vuoi.
 
 Consiglio: la prima volta provalo su un progetto piccolo.
 

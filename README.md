@@ -54,7 +54,23 @@ Coduet è stato verificato su Windows 11 con Codex CLI 0.163.0. Su macOS e Linux
 | `/coduet:start <idea>` | Avvia un progetto nuovo, o riprende un progetto esistente dividendo il lavoro con Codex |
 | `/coduet:settings` | Mostra e cambia le impostazioni (anche una sola, es. "metti 3 task Codex") |
 
+**Dove funzionano i comandi con la barra.** Nelle sessioni di Code i comandi `/coduet:start` e `/coduet:settings` compaiono tra i suggerimenti. Nei thread di un progetto i comandi con la barra non vengono eseguiti: scrivi a parole **"avvia Coduet"** (oppure "dividiamo il lavoro con Codex") e **"impostazioni di Coduet"**.
+
+**Dopo l'installazione o un aggiornamento** apri una sessione (o un thread) nuova: quelle già aperte non vedono il plugin finché non scrivi `/reload-plugins`, dove è disponibile.
+
+**Mentre Codex lavora** Coduet te lo dice: messaggio all'avvio del task, voce nella lista delle attività, aggiornamenti nei task lunghi e riepilogo alla fine. Puoi chiedere in ogni momento "come va Codex?".
+
 Al primo utilizzo Coduet propone una breve configurazione iniziale. Consiglio: provalo prima su un progetto piccolo.
+
+## Far lavorare un progetto in locale
+
+Codex funziona solo sul PC. I progetti dell'app di Claude possono lavorare nel cloud: in quel caso Coduet usa una modalità ibrida più complessa. Per farli lavorare direttamente sul PC:
+
+1. apri le impostazioni del progetto, sezione **Ambiente**;
+2. in **Locale**, attiva l'uso del tuo dispositivo e aggiungi tra le cartelle la copia del progetto sul PC (la cartella che contiene `.git`);
+3. impostala come **predefinita**.
+
+Da quel momento i thread del progetto lavorano in quella cartella. Coduet te lo propone da solo quando si accorge di essere nel cloud con il PC collegato.
 
 ## Configurazione
 
