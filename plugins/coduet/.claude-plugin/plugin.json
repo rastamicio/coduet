@@ -1,6 +1,6 @@
 {
   "name": "coduet",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Dividi il lavoro di un progetto tra Claude Code e Codex CLI: piano condiviso, esecuzione in parallelo, revisione, passaggio di consegne e ripresa automatica. Progetto indipendente, non affiliato ad Anthropic o OpenAI.",
   "author": {
     "name": "rastamicio",

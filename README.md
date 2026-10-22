@@ -74,9 +74,9 @@ Se `coduet-config` viene salvata solo sul PC (succede, per esempio, nell'app des
 
 ## Aggiornamenti
 
-**Avviso automatico.** Quando usi `/coduet:start`, Coduet controlla (al massimo una volta al giorno) se è uscita una versione più recente, ti riassume le novità e ti chiede se aggiornare.
+**Avviso automatico.** Ogni volta che usi `/coduet:start`, Coduet controlla se è uscita una versione più recente, ti riassume le novità e ti chiede se aggiornare.
 
-**Aggiornamento dalla chat (consigliato).** Se sul PC è disponibile il comando `claude` da terminale, rispondi "Aggiorna ora" e Coduet si aggiorna da solo per tutte le sessioni; poi scrivi `/reload-plugins`. Se il comando manca, Coduet se ne accorge e ti propone di installarlo lui, una volta sola, con il tuo ok. Per installarlo a mano:
+**Aggiornamento dalla chat (consigliato).** Se sul PC è disponibile il comando `claude` da terminale, rispondi "Aggiorna ora" e Coduet si aggiorna da solo per tutte le sessioni; poi scrivi `/reload-plugins` (nei thread di progetto, dove non funziona, apri un thread nuovo). Se il comando manca, Coduet se ne accorge e ti propone di installarlo lui, una volta sola, con il tuo ok. Per installarlo a mano:
 
 - Windows (PowerShell): `irm https://claude.ai/install.ps1 | iex`. Se l'installazione avvisa che la cartella non è nel PATH, aggiungila con:
   `[Environment]::SetEnvironmentVariable("Path", [Environment]::GetEnvironmentVariable("Path","User") + ";$env:USERPROFILE\.local\bin", "User")`

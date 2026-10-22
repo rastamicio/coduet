@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.2.1
+
+- Il controllo aggiornamenti si fa sempre a ogni avvio di `coduet:start` (il limite di uno al giorno resta solo per i controlli a metà sessione), così una versione pubblicata in giornata si vede subito. Su richiesta dell'utente controlla subito.
+- Dopo l'aggiornamento, dove `/reload-plugins` non è disponibile (per esempio nei thread di progetto), Coduet suggerisce di aprire un thread nuovo.
+
 ## 0.2.0
 
 - **Profili per piano**: Coduet si adatta agli abbonamenti dell'utente. `coduet:settings` chiede piano Claude e accesso a Codex (ChatGPT Free, Go, Plus, Pro, Business o chiave API) e propone i parametri adatti: task in parallelo, ragionamento, soglia di delega, asset di prova, rigenerazioni, immagini, tetto di spesa.

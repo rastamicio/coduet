@@ -128,10 +128,10 @@ A ogni avvio o ripresa della skill, **per prima cosa** leggi la configurazione (
 
 Prima di tutto, nelle sessioni sul PC, verifica che l'aggiornamento dalla chat sia possibile ("Comando `claude` sul PC", qui sotto).
 
-Il controllo si fa in tre momenti: all'avvio della skill, all'inizio di ogni fase nelle sessioni lunghe, e alla fine del lavoro (Passo 9). **Mai più di un controllo al giorno**, e mai più di un avviso per sessione, a meno che nel frattempo esca una versione ancora più nuova.
+Il controllo si fa in tre momenti: **sempre** all'avvio della skill, all'inizio di ogni fase nelle sessioni lunghe (al massimo una volta al giorno), e alla fine del lavoro (Passo 9). Se l'utente chiede di controllare gli aggiornamenti, controlla subito. Mai più di un avviso per sessione, a meno che nel frattempo esca una versione ancora più nuova.
 
 1. **Versione installata**: con `claude plugin list` (riga `Version` del plugin `coduet@<marketplace>`), oppure leggendo `.claude-plugin/plugin.json` nella cartella del plugin (due livelli sopra la cartella di questa skill).
-2. **Ultimo controllo**: leggi `~/.coduet/ultimo-controllo.txt` (data e ultima versione trovata). Se il controllo di oggi è già stato fatto, usa la versione salvata senza ripetere la richiesta.
+2. **Ultimo controllo**: leggi `~/.coduet/ultimo-controllo.txt` (data, ora e ultima versione trovata). Usalo solo per i controlli a metà sessione: se uno è già stato fatto oggi, non ripetere la richiesta. All'avvio della skill e su richiesta dell'utente controlla sempre, senza usare il risultato salvato.
 3. **Versione più recente**: leggi il campo `repository` di `plugin.json` e scarica `https://raw.githubusercontent.com/<proprietario>/<repository>/main/plugins/coduet/.claude-plugin/plugin.json`; per le novità scarica allo stesso modo `CHANGELOG.md` dalla radice del repository. Salva data e versione in `~/.coduet/ultimo-controllo.txt`.
 4. **Se il controllo non riesce** (nessuna connessione, rete bloccata, file non trovato): non dire niente e prosegui.
 5. **Se c'è una versione più recente**, avvisa l'utente in poche righe: versione installata, versione nuova, quante versioni ha saltato, e le novità principali di tutte le versioni saltate (dal CHANGELOG). Poi chiedi con AskUserQuestion: "Aggiorna ora" oppure "Più tardi". Il lavoro non si blocca in nessun caso.
@@ -140,7 +140,7 @@ Il controllo si fa in tre momenti: all'avvio della skill, all'inizio di ogni fas
    - **Marketplace da una cartella locale** (lo vedi con `claude plugin marketplace list`): esegui `git pull` in quella cartella.
    - **Comando `claude` non disponibile**: proponi di installarlo ora (vedi sotto); se l'utente non vuole, spiegagli che può aggiornare dal pannello dei plugin dell'app: Directory → Plugin → Code → `···` accanto al marketplace → Verifica aggiornamenti → ingranaggio su Coduet → Aggiorna.
    - **Sessione cloud**: non aggiornare; di' solo che la versione nuova esiste.
-7. **Dopo l'aggiornamento** di' all'utente di scrivere `/reload-plugins` (oppure di aprire una nuova sessione): fino ad allora questa sessione continua con le istruzioni già caricate. Ricorda anche che l'aggiornamento vale per tutte le sessioni sul PC.
+7. **Dopo l'aggiornamento** di' all'utente di scrivere `/reload-plugins` oppure di aprire una nuova sessione: fino ad allora questa sessione continua con le istruzioni già caricate. In interfacce dove i comandi con la barra non vengono eseguiti (per esempio i thread di un progetto), di' direttamente di aprire un thread nuovo. Ricorda anche che l'aggiornamento vale per tutte le sessioni sul PC.
 8. **"Più tardi"**: prosegui; ricordalo in una riga solo alla fine del lavoro (Passo 9).
 
 Non aggiornare mai senza il consenso esplicito dell'utente.
