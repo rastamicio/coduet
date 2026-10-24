@@ -10,3 +10,5 @@ $p = Start-Process -FilePath $env:ComSpec -ArgumentList '/d', '/s', '/c', "`"$cm
 if (Codex-HitLimit $out) { Add-Content $log "$(Now-Iso) LIMITE ancora raggiunto" }
 elseif ($p.ExitCode -ne 0) { Add-Content $log "$(Now-Iso) ERRORE codice $($p.ExitCode)" }
 else { Add-Content $log "$(Now-Iso) COMPLETATO" }
+# Remove this scheduled task now that it has run (last line: nothing may follow it).
+Unregister-ScheduledTask -TaskName "Coduet-resume-$($Task -replace '[^A-Za-z0-9_-]', '_')" -Confirm:$false -ErrorAction SilentlyContinue
