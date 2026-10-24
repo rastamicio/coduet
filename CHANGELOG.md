@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.4.2
+
+- Windows: le attività pianificate della ripresa e dell'avviso di riserva si cancellano da sole appena hanno girato, invece di restare registrate per circa due giorni (segnalato dal collaudo).
+
 ## 0.4.1
 
 - Collaudo più rigoroso: lavora sempre in un repository di prova nella cartella temporanea, mai nel progetto aperto, ed esegue tutti i passi (asset e ripresa simulata compresi) fino alla tabella finale.
