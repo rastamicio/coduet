@@ -130,19 +130,23 @@ In autonomia, produzione e controlli procedono, ma gli asset restano in attesa d
 |---|---|
 | File segreti non nel repository (`.env`, chiavi) | Li riconosce dai file di esempio e da `.gitignore`; i segreti non passano mai da chat, piano, prompt o git; l'utente li crea a mano; i task che ne hanno bisogno li fa Claude; Codex non li legge; controllo prima di ogni commit |
 | File di lavoro di Coduet | Esclusi dai commit con `.git/info/exclude`, senza modificare il progetto |
-| macOS e Linux | Stessi comandi Codex; ripresa con script bash e launchd (Mac) o systemd/at/cron (Linux), avvisi con `osascript` o `notify-send` (da verificare) |
-| Più progetti con Codex insieme | Registro globale sul PC: al massimo 2 task Codex attivi in totale, stato della quota condiviso, riprese a scaglioni |
+| macOS e Linux | Stessi comandi Codex; script bash inclusi nel plugin; ripresa con `at`, systemd (Linux) o launchd (Mac), avvisi con `osascript` o `notify-send` (provati in ambiente di test, da verificare su un sistema reale) |
+| Più progetti con Codex insieme | Registro dei task sul PC (`~/.coduet/tasks/`), gestito dagli script: al massimo 2 task Codex attivi in totale, stato della quota condiviso, riprese a scaglioni |
 | GitLab, Bitbucket, altri | Funziona uguale ("PR" vale anche per le merge request) |
 | Git senza repository remoto | Solo lavoro sul PC, niente modalità ibrida |
 | Nessun git | Propone `git init` con l'ok dell'utente; altrimenti backup e lavoro su copie della cartella |
 | Progetti senza test | Verifica con build, typecheck e lint, prova pratica dell'app e revisione più attenta; propone test solo con l'ok dell'utente |
 
-### Due skill: `coduet:start` e `coduet:settings`
+### Tre skill: `coduet:start`, `coduet:settings`, `coduet:test`
 
-Coduet è un plugin per Claude Code con due skill:
+Coduet è un plugin per Claude Code con tre skill e una cartella di script:
 
 - **`/coduet:start`** fa il lavoro: funziona sia su **progetti nuovi** sia su **progetti già avviati** (legge il piano esistente e assegna solo i task ancora aperti). Le skill richiamate a mano durante il lavoro valgono solo per quel momento e non entrano nel flusso.
 - **`/coduet:settings`** cambia le impostazioni e **non contiene logica di lavoro**, così cambiare configurazione non disturba il lavoro in corso.
+- **`/coduet:test`** ("collauda Coduet") fa un collaudo guidato di pochi minuti su un repository di prova, senza toccare i tuoi progetti.
+- **Script** (`plugins/coduet/scripts`, per Windows e per macOS/Linux): aggiornamento, controllo della copia locale, lancio e stato di Codex, ripresa. Claude li lancia invece di scrivere comandi ogni volta: meno errori e meno token.
+
+Per consumare poca quota, la skill principale contiene solo il flusso e i messaggi; i dettagli dei casi particolari stanno in file di riferimento che Claude legge solo quando servono.
 
 Le impostazioni sono:
 - **Skill per fase**: per ogni fase (ideazione, piano, esecuzione, isolamento, revisione, verifica) una o più skill tra quelle installate, in ordine. Di partenza Superpowers.
@@ -290,9 +294,10 @@ Se lavori anche in sessioni cloud, Coduet deve essere disponibile anche lì: un 
 - **Nei thread di un progetto** i comandi con la barra non vengono eseguiti: scrivi "avvia Coduet" e "impostazioni di Coduet".
 - **Dopo installazione o aggiornamento** apri una sessione o un thread nuovo.
 - **Per far lavorare un progetto sul PC**: impostazioni del progetto → Ambiente → Locale → aggiungi la cartella della copia del progetto e rendila predefinita.
-- **Mentre Codex lavora** Coduet te lo dice (messaggio all'avvio, lista delle attività, aggiornamenti, riepilogo); chiedi "come va Codex?" quando vuoi.
+- **Mentre Codex lavora** Coduet te lo dice con messaggi che iniziano con `Coduet ·` (▶ avviato, ✓ finito, ⏸ quota esaurita, ↻ ripresa), la lista delle attività e un riepilogo; chiedi "come va Codex?" quando vuoi.
+- **Collaudo**: `/coduet:test` oppure "collauda Coduet".
 
-Consiglio: la prima volta provalo su un progetto piccolo.
+Consiglio: dopo l'installazione fai il collaudo, poi provalo su un progetto piccolo.
 
 ---
 
@@ -302,7 +307,7 @@ Consiglio: la prima volta provalo su un progetto piccolo.
 
 | Scopo | Comando |
 |---|---|
-| Eseguire un task | `codex exec --cd "<cartella>" --sandbox workspace-write -c model_reasoning_effort="medium" -o "<cartella>/.codex-esito.md" "<prompt>"` |
+| Eseguire un task (lo fa lo script `codex-run`) | `codex exec --cd "<cartella>" --sandbox workspace-write -c model_reasoning_effort="medium" -o "<cartella>/.codex-esito.md" "<prompt>"` |
 | Riprendere una sessione | da dentro la cartella: `codex exec resume <ID> -c sandbox_mode="workspace-write" -c model_reasoning_effort="medium" -o .codex-esito.md "<prompt>"` |
 | Quota e stato | `/status` dentro Codex, oppure chatgpt.com/settings/usage |
 | Elenco sessioni | `codex agents`; ripresa interattiva con `codex resume <id>` |
@@ -325,7 +330,8 @@ Coduet è stato verificato con **Codex CLI 0.163.0**. Codex si aggiorna spesso: 
 - Testo esatto dell'errore di limite di Codex, e se contiene l'ora del reset.
 - Generazione di immagini da `codex exec`.
 - Presenza di ffmpeg e Blender sul PC, se servono video o modelli 3D.
-- Ripresa automatica su macOS e Linux.
+- Script e ripresa automatica su un Mac o un PC Linux reale.
+- Script PowerShell su un PC Windows reale (il collaudo li prova).
 - Strumento di Claude Code desktop per creare attività programmate e notifiche.
 - Consumo reale del controllo automatico di Claude: da misurare nei primi 3 casi.
 
@@ -335,3 +341,5 @@ Coduet è stato verificato con **Codex CLI 0.163.0**. Codex si aggiorna spesso: 
 
 - [`coduet:start`](../plugins/coduet/skills/start/SKILL.md)
 - [`coduet:settings`](../plugins/coduet/skills/settings/SKILL.md)
+- [`coduet:test`](../plugins/coduet/skills/test/SKILL.md)
+- [Script](../plugins/coduet/scripts)

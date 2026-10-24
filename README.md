@@ -33,7 +33,7 @@ Indica i tuoi piani con `/coduet:settings` e Coduet propone i parametri adatti.
 - `git`. Un repository remoto (GitHub, GitLab...) è necessario solo per la modalità ibrida cloud + PC.
 - Facoltativo: il plugin Superpowers. Senza, Coduet usa un metodo base per ogni fase.
 
-Coduet è stato verificato su Windows 11 con Codex CLI 0.163.0. Su macOS e Linux i comandi di Codex sono gli stessi; la ripresa automatica su quei sistemi non è ancora stata provata.
+Coduet è stato verificato su Windows 11 con Codex CLI 0.163.0. Su macOS e Linux usa script equivalenti, provati in ambiente di test ma non ancora su un Mac o un PC Linux reale: il collaudo (`/coduet:test`) ti dice se funzionano.
 
 ## Installazione
 
@@ -49,18 +49,34 @@ Coduet è stato verificato su Windows 11 con Codex CLI 0.163.0. Su macOS e Linux
 
 ## Uso
 
-| Comando | A cosa serve |
+| Cosa scrivere | A cosa serve |
 |---|---|
-| `/coduet:start <idea>` | Avvia un progetto nuovo, o riprende un progetto esistente dividendo il lavoro con Codex |
-| `/coduet:settings` | Mostra e cambia le impostazioni (anche una sola, es. "metti 3 task Codex") |
+| `/coduet:start <idea>` oppure **"avvia Coduet"** | Avvia un progetto nuovo, o riprende un progetto esistente dividendo il lavoro con Codex |
+| `/coduet:settings` oppure **"impostazioni di Coduet"** | Mostra e cambia le impostazioni (anche una sola, es. "metti 3 task Codex") |
+| `/coduet:test` oppure **"collauda Coduet"** | Collaudo guidato di circa 5 minuti su un repository di prova: lancio di Codex, avviso di fine, un asset, ripresa simulata, controllo aggiornamenti |
 
-**Dove funzionano i comandi con la barra.** Nelle sessioni di Code i comandi `/coduet:start` e `/coduet:settings` compaiono tra i suggerimenti. Nei thread di un progetto i comandi con la barra non vengono eseguiti: scrivi a parole **"avvia Coduet"** (oppure "dividiamo il lavoro con Codex") e **"impostazioni di Coduet"**.
+Nei thread di un progetto i comandi con la barra non vengono eseguiti: usa le frasi in grassetto.
 
-**Dopo l'installazione o un aggiornamento** apri una sessione (o un thread) nuova: quelle già aperte non vedono il plugin finché non scrivi `/reload-plugins`, dove è disponibile.
+### Dove si può usare
 
-**Mentre Codex lavora** Coduet te lo dice: messaggio all'avvio del task, voce nella lista delle attività, aggiornamenti nei task lunghi e riepilogo alla fine. Puoi chiedere in ogni momento "come va Codex?".
+Codex è installato sul tuo PC, quindi i task di Codex partono solo da sessioni che girano sul PC.
 
-Al primo utilizzo Coduet propone una breve configurazione iniziale. Consiglio: provalo prima su un progetto piccolo.
+| Dove sei | Cosa fa Coduet |
+|---|---|
+| Sessione di Code sul PC, nella cartella del progetto | Tutto |
+| Thread di un progetto con cartella locale predefinita (vedi sotto) | Tutto |
+| Sessione o thread nel cloud, con il PC collegato | Piano e revisione nel cloud; i task di Codex li esegue una sessione sul PC (modalità ibrida) |
+| Sessione nel cloud senza PC | Solo il lavoro di Claude: Coduet ti dice che Codex non è raggiungibile e come risolvere |
+
+Coduet te lo dice comunque al primo messaggio: dove sta girando e se Codex è raggiungibile.
+
+### Cosa vedi mentre lavora
+
+Ogni passo ha un messaggio breve che inizia con `Coduet ·`: dove sei e se Codex c'è, controlli della copia, divisione del piano, **▶ Codex avviato** (task, ora, durata stimata), **✓ Codex finito** (file, token), esito della revisione, **⏸ quota Codex esaurita** con gli orari di ripresa, controllo e avviso, **↻ esito della ripresa**, **⬆ aggiornamento disponibile**, **■ fine**. Ogni task di Codex compare anche nella lista delle attività. Puoi chiedere in ogni momento "come va Codex?".
+
+**Dopo l'installazione o un aggiornamento** apri una sessione (o un thread) nuova: quelle già aperte continuano con la versione di prima.
+
+Al primo utilizzo Coduet propone una configurazione iniziale unica (circa 2 minuti): piani, skill per fase, comando `claude`, cartella locale. Consiglio: poi fai il collaudo.
 
 ## Far lavorare un progetto in locale
 
@@ -92,7 +108,7 @@ Se `coduet-config` viene salvata solo sul PC (succede, per esempio, nell'app des
 
 **Avviso automatico.** Ogni volta che usi `/coduet:start`, Coduet controlla se è uscita una versione più recente, ti riassume le novità e ti chiede se aggiornare.
 
-**Aggiornamento dalla chat (consigliato).** Se sul PC è disponibile il comando `claude` da terminale, rispondi "Aggiorna ora" e Coduet si aggiorna da solo per tutte le sessioni; poi scrivi `/reload-plugins` (nei thread di progetto, dove non funziona, apri un thread nuovo). Se il comando manca, Coduet se ne accorge e ti propone di installarlo lui, una volta sola, con il tuo ok. Per installarlo a mano:
+**Aggiornamento dalla chat (consigliato).** Se sul PC è disponibile il comando `claude` da terminale, rispondi "Aggiorna ora": uno script del plugin aggiorna marketplace e plugin, controlla che la versione sia cambiata e te lo conferma; poi apri una sessione o un thread nuovo. Se qualcosa va storto ti mostra il comando da incollare in un terminale e salva i dettagli in `~/.coduet/aggiornamento.log`. Se il comando manca, Coduet se ne accorge e ti propone di installarlo lui, una volta sola, con il tuo ok. Per installarlo a mano:
 
 - Windows (PowerShell): `irm https://claude.ai/install.ps1 | iex`. Se l'installazione avvisa che la cartella non è nel PATH, aggiungila con:
   `[Environment]::SetEnvironmentVariable("Path", [Environment]::GetEnvironmentVariable("Path","User") + ";$env:USERPROFILE\.local\bin", "User")`
@@ -116,9 +132,10 @@ Le novità di ogni versione sono nel [CHANGELOG](CHANGELOG.md).
 - Codex viene lanciato solo con la sandbox `workspace-write`: può scrivere solo nella cartella del task.
 - Il lavoro di Codex sta su branch separati e viene unito solo dopo verifica e revisione.
 - I segreti (`.env` e simili) non passano mai da chat, piano, prompt o git, e Codex riceve l'istruzione di non leggerli.
-- La ripresa automatica crea **attività pianificate sul tuo PC** che lanciano script scritti nel worktree del task; sono leggibili e si rimuovono da sole dopo l'esecuzione.
+- Le operazioni ripetitive (aggiornamento, lancio e stato di Codex, ripresa) usano **script inclusi nel plugin** (`plugins/coduet/scripts`), leggibili, invece di comandi scritti al momento.
+- La ripresa automatica crea **attività pianificate sul tuo PC** che lanciano quegli script; si rimuovono da sole dopo l'esecuzione.
 - Il codice del progetto viene inviato sia ad Anthropic sia a OpenAI. Per codice riservato valuta prima, e controlla nelle impostazioni dei due servizi l'uso dei dati per l'addestramento.
-- Il controllo aggiornamenti legge due file pubblici dal repository di Coduet su GitHub (`plugin.json` e `CHANGELOG.md`), al massimo una volta al giorno; non invia nessun dato del progetto. Gli aggiornamenti, e l'eventuale installazione del comando `claude`, avvengono solo con il tuo ok.
+- Il controllo aggiornamenti legge due file pubblici dal repository di Coduet su GitHub (`plugin.json` e `CHANGELOG.md`), a ogni avvio di Coduet; non invia nessun dato del progetto. Gli aggiornamenti, e l'eventuale installazione del comando `claude`, avvengono solo con il tuo ok.
 - Coduet è fatto di istruzioni in testo: leggile prima di installarlo. Aggiornando, ti fidi anche delle versioni future.
 
 ## Contribuire
@@ -128,7 +145,8 @@ Coduet migliora con l'uso: alla fine di ogni lavoro propone correzioni scritte i
 ## Documentazione
 
 - [Guida completa](docs/guida.md): perché, come funziona, installazione passo passo, comandi verificati e problemi noti.
-- Testo delle skill: [`coduet:start`](plugins/coduet/skills/start/SKILL.md), [`coduet:settings`](plugins/coduet/skills/settings/SKILL.md).
+- Testo delle skill (in inglese, Coduet risponde nella tua lingua): [`coduet:start`](plugins/coduet/skills/start/SKILL.md) con i file di [riferimento](plugins/coduet/skills/start/reference), [`coduet:settings`](plugins/coduet/skills/settings/SKILL.md), [`coduet:test`](plugins/coduet/skills/test/SKILL.md).
+- Script: [`plugins/coduet/scripts`](plugins/coduet/scripts). Test automatici delle skill: [`plugins/coduet/evals`](plugins/coduet/evals) (`claude plugin eval plugins/coduet`, consuma quota).
 
 ## Licenza
 

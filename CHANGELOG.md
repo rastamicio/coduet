@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.4.0
+
+- **Più leggero**: la skill principale è un quarto di prima (circa 16 KB invece di 62 KB). Le parti usate solo in certi casi (asset, ripresa, modalità ibrida, copia locale, aggiornamenti, profili) stanno in file di riferimento caricati solo quando servono. Il testo delle skill è in inglese; Coduet risponde sempre nella lingua dell'utente.
+- **Script veri invece di comandi scritti al momento**, per Windows (PowerShell) e macOS/Linux (bash): aggiornamento, controllo della copia locale, lancio e stato di Codex, pianificazione della ripresa, ripresa e avviso di riserva. Più affidabili e meno token.
+- **Aggiornamento dalla chat più affidabile**: lo script aggiorna, verifica la versione prima e dopo, e se fallisce mostra il comando da incollare e salva un log.
+- **Messaggi a ogni passo** (`Coduet · …`): dove sta girando e se Codex è raggiungibile, avvio e fine di ogni task Codex (file, token), revisione, quota esaurita con gli orari di ripresa, esito della ripresa, aggiornamenti.
+- **Avviso quando Codex finisce**: Codex gira in background e Claude viene avvisato appena termina, senza dover controllare.
+- **Registro dei task** in `~/.coduet/tasks/`, condiviso tra progetti: limite di task contemporanei rispettato in automatico, stato su richiesta.
+- **Configurazione iniziale unica**: piani, skill per fase, comando `claude`, Codex e dove avviare Coduet, in un solo passaggio.
+- **Collaudo guidato** `/coduet:test` ("collauda Coduet"): verifica in pochi minuti lancio di Codex, avviso di fine, asset, ripresa simulata e aggiornamenti, su un repository di prova.
+- **Test automatici delle skill** (`evals/`) e **icona** del plugin.
+
 ## 0.3.0
 
 - **Si vede quando Codex lavora**: messaggio all'avvio di ogni task, voce nella lista delle attività, aggiornamenti brevi nei task lunghi, riepilogo alla fine (esito, file, token) e stato su richiesta ("come va Codex?").

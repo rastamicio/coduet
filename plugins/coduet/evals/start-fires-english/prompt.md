@@ -1,0 +1,6 @@
+---
+max_turns: 3
+allowed_tools: [Read, Glob, Grep, Skill]
+timeout_seconds: 180
+---
+Let's split the work with Codex on this repo.
