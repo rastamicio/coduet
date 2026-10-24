@@ -1,119 +1,119 @@
 ---
 name: settings
-description: Usa quando l'utente scrive "impostazioni di Coduet", "coduet settings" o simili, o vuole vedere o cambiare le impostazioni di Coduet (skill per fase, verifiche aggiuntive, parametri), per la configurazione iniziale, o per salvarle per un progetto o nella sua configurazione personale.
+description: Use when the user says "impostazioni di Coduet", "Coduet settings", "configura Coduet" or similar, wants to see or change Coduet's settings (phase skills, extra checks, parameters, plans), for the initial setup, or to save them for a project or personally.
 ---
 
 # Coduet: settings
 
-Questa skill (parte del plugin Coduet) serve solo a vedere e modificare la configurazione usata da `coduet:start`. **Non contiene logica di lavoro**: non avvia task, non tocca il codice del progetto, non interferisce con il lavoro in corso, non modifica mai i file del plugin né altre skill.
+Only shows and changes the configuration used by `coduet:start`. **No working logic**: it starts no tasks, doesn't touch project code or running work, never edits plugin files or other skills. Reply in the user's language, in simple sentences.
 
-Rispondi nella lingua dell'utente, con frasi semplici.
+## Three levels
 
-## I tre livelli della configurazione
+The most specific wins:
+1. **Defaults**: the "Configuration" section of `coduet:start` (plan profiles in its `reference/profiles.md`). Read only; they change with plugin updates.
+2. **Personal**: the user's skill `coduet-config`. In the account → seen by PC and cloud sessions; only on the PC (`~/.claude/skills/coduet-config/SKILL.md`) → only that PC. Holds only values that differ from the defaults. Older copies may use Italian names: match them by meaning.
+3. **Project**: `.coduet.md`, at the root or next to the plan (the `coordinamento` branch when work spans several branches). Only values the project changes.
 
-Per ogni voce vale il livello più specifico:
-1. **Valori di partenza**: la sezione "Configurazione" della skill `coduet:start`, dentro il plugin. Si leggono, non si modificano: cambiano solo con un aggiornamento del plugin.
-2. **Configurazione personale**: la skill personale `coduet-config` dell'utente. Se è salvata nel suo account la vedono sia le sessioni sul PC sia quelle cloud; se è salvata solo sul PC (`~/.claude/skills/coduet-config/SKILL.md`) la vedono solo le sessioni su quel PC. Contiene solo le voci che l'utente ha cambiato rispetto ai valori di partenza.
-3. **Configurazione del progetto**: il file `.coduet.md` del progetto, nella radice oppure, se il lavoro è su più branch, nello stesso posto del piano (branch `coordinamento`). Contiene solo le voci che il progetto cambia.
+## Modes
 
-## Modalità
+- **Full** (see or review the settings): all steps.
+- **Quick** (a precise change, e.g. "set 3 Codex tasks"): show that item, current and new value, go to Step 6.
+- **Plans** (set or change subscriptions, or called by `coduet:start`): Step 3b, then Step 6.
+- **Initial setup** (no `coduet-config`, or called at first use): the single guided setup below.
 
-- **Completa** (l'utente chiede di vedere o rivedere le impostazioni): segui tutti i passi.
-- **Rapida** (l'utente chiede una modifica precisa, per esempio "metti 3 task Codex"): mostra solo quella voce, valore attuale e nuovo, e vai al Passo 6.
-- **Piani** (l'utente vuole indicare o cambiare i suoi abbonamenti, oppure la richiama `coduet:start` perché i piani non sono indicati): fai solo il Passo 3-bis, poi il Passo 6.
-- **Configurazione iniziale** (la skill `coduet-config` non esiste, o la richiama `coduet:start` al primo utilizzo): fai il Passo 3-bis (piani) e il Passo 3 (skill per fase); chiedi se vuole vedere anche verifiche aggiuntive e parametri (risposta proposta: no, valori di partenza); poi salva nella configurazione personale.
+## Initial setup (one pass, about 2 minutes)
 
-## Passo 1: leggere
+Tell the user at the start what it covers, then:
+1. **Plans**: Step 3b.
+2. **Phase skills**: Step 3, with the obvious choice preselected for each phase so a confirmation is enough.
+3. **`claude` command** (PC sessions): run `coduet-update check` from the plugin's `scripts` folder (`windows/coduet-update.ps1` or `unix/coduet-update.sh`); if `cli=missing`, offer to install it as in `coduet:start` → `reference/updates.md`. It enables updating Coduet from the chat.
+4. **Codex**: `codex --version` and `codex login status`; if missing, give the install command for the system and say Coduet works without it until installed.
+5. **Where to launch Coduet**: explain in 3 lines — Codex runs only in sessions on the PC (a Code session in the project folder, or a project whose threads use a local default folder: project settings → local environment → add the project folder and make it default); cloud sessions can plan and review but can't run Codex. Offer to help set the local folder.
+6. Ask whether to see extra checks and parameters too (suggested: no, defaults).
+7. Save to the personal configuration (Step 6). If nothing differs from the defaults, still write the file with the plans (so the setup isn't offered again).
 
-Leggi i valori di partenza (sezione "Configurazione" di `coduet:start`), la skill `coduet-config` se esiste (caricala con il tool Skill o leggine il `SKILL.md`) e, se sei in un progetto, il file `.coduet.md`. Leggi anche l'elenco delle skill installate con nome e descrizione.
+## Step 1: read
 
-## Passo 2: mostrare
+Defaults, `coduet-config` if present (Skill tool or its `SKILL.md`), `.coduet.md` if in a project, and the list of installed skills with descriptions.
 
-Mostra un riepilogo breve, in tabelle, con il valore in uso per ogni voce e da quale livello viene:
-- skill per fase, segnando quelle non installate;
-- verifiche aggiuntive;
-- parametri.
+## Step 2: show
 
-## Passo 3: skill per fase
+Short tables with the value in use for each item and which level it comes from: phase skills (mark the missing ones), extra checks, parameters.
 
-Per ogni fase (Ideazione, Piano, Esecuzione dei task di Claude, Isolamento dei task di Codex, Revisione, Verifica finale):
-1. Trova tra le skill installate quelle adatte a quella fase, leggendone nome e descrizione.
-2. Chiedi con AskUserQuestion, con scelta multipla: la skill attuale (se installata) proposta per prima, poi le alternative trovate (al massimo 3; l'utente può scriverne un'altra), poi "Nessuna: metodo base". Raggruppa più fasi nella stessa chiamata (al massimo 4 domande per volta).
-3. Se l'utente sceglie più skill per la stessa fase, chiedigli l'ordine e avvisalo che più skill per fase consumano più quota.
-4. Se una fase ha una sola opzione ovvia, proponila già come prima scelta, così basta confermare.
+## Step 3: phase skills
 
-## Passo 3-bis: piani e profilo
+For each phase (Brainstorm, Plan, Claude's tasks, Codex isolation, Review, Final check):
+1. Find installed skills suited to that phase from their name and description.
+2. AskUserQuestion, multi-select: current skill (if installed) first, then up to 3 alternatives (the user can type another), then "None: base method". Group phases, up to 4 questions per call.
+3. Several skills for one phase: ask the order and warn they use more quota.
 
-1. Chiedi con AskUserQuestion:
-   - **Piano Claude**: Pro, Max, Team o Enterprise, API/Console.
-   - **Accesso Codex**: ChatGPT Free, ChatGPT Go, ChatGPT Plus, ChatGPT Pro, ChatGPT Business/Enterprise/Edu, chiave API.
-2. Prendi il profilo corrispondente dalla sezione "Profili per piano" di `coduet:start` e mostra all'utente, in una tabella, solo le voci che cambierebbero rispetto ai valori in uso (valore attuale, valore del profilo).
-3. Se una voce del profilo è in conflitto con una scelta che l'utente aveva fatto a mano in `coduet-config`, non sovrascriverla: chiedigli quale tenere.
-4. Con accesso tramite chiave API, chiedi anche il tetto di spesa per sessione (o "nessuno") e ricorda che Codex si paga a consumo.
-5. Con piano Claude Free, spiega che Claude Code non è disponibile e quindi Coduet non può funzionare.
-6. Salva i piani e i valori accettati con il Passo 6.
+## Step 3b: plans and profile
 
-Se l'utente cambia abbonamento in futuro, basta rifare questo passo.
+1. AskUserQuestion:
+   - **Claude plan**: Pro, Max, Team or Enterprise, API/Console.
+   - **Codex access**: ChatGPT Free, Go, Plus, Pro, Business/Enterprise/Edu, API key.
+2. Take the matching profile and show only the values that would change (current, profile).
+3. A profile value conflicting with a manual choice already in `coduet-config`: don't overwrite; ask which to keep.
+4. API key: ask the spending cap per session (or "none"); remind that Codex is pay-per-use.
+5. Claude Free: Claude Code isn't available, so Coduet can't run.
 
-## Passo 4: verifiche aggiuntive
+Changing subscription later: redo this step.
 
-Chiedi se vuole aggiungere controlli che Coduet non fa di suo. Proponi esempi adatti al progetto (accessibilità, prestazioni, sicurezza delle dipendenze, testi e traduzioni, comportamento su telefono, licenze degli asset, privacy) più la possibilità di scriverne uno suo. Per ognuno chiedi in quale fase farlo (di solito Revisione o Verifica finale). Permetti anche di togliere verifiche esistenti.
+## Step 4: extra checks
 
-## Passo 5: parametri
+Offer checks Coduet doesn't do by itself, with examples fitting the project (accessibility, performance, dependency security, copy and translations, mobile behaviour, asset licences, privacy) or the user's own. Ask the phase for each (usually Review or Final check). Allow removing existing ones.
 
-Mostra la tabella dei parametri con una spiegazione di una riga ciascuno e chiedi quali cambiare. Controlla che i valori abbiano senso e spiega l'effetto delle scelte rischiose, per esempio:
-- più task Codex contemporanei consumano la quota più in fretta (valori sensati: 1-4);
-- disattivare il controllo di Claude lascia solo l'avviso di riserva;
-- 0 rigenerazioni automatiche significa che ogni asset difettoso arriva all'utente.
+## Step 5: parameters
 
-## Passo 6: salvare
+Show the parameter table with a one-line explanation each and ask which to change. Check values make sense and explain risky ones: more concurrent Codex tasks burn quota faster (sensible: 1-4); switching off the Claude check leaves only the backup notice; 0 automatic regenerations sends every faulty asset to the user.
 
-Mostra il riepilogo delle modifiche (valore vecchio, valore nuovo) e chiedi con AskUserQuestion:
-- **Salva per questo progetto**: scrivi o aggiorna `.coduet.md` con le sole voci cambiate. Mettilo dove lo vedono tutte le sessioni del progetto (radice, oppure branch `coordinamento` se il lavoro è su più branch) e invialo sul repository remoto. Le sessioni in corso lo applicano dall'inizio della fase successiva.
-- **Salva nella mia configurazione personale**: scrivi la versione completa aggiornata della skill personale `coduet-config` (nuova se non esiste, aggiornamento se esiste), usando il modello qui sotto. Vale dalle prossime sessioni in tutti i progetti, tranne per le voci che un progetto cambia nel suo `.coduet.md`; per una sessione già in corso, dai all'utente il prompt per ricaricare `coduet:start`. Dove salvarla:
-  - **Nell'account**, se la sessione ha uno strumento per proporre o salvare skill nell'account dell'utente: usalo. Così vale ovunque, sul PC e nel cloud.
-  - **Solo sul PC**, se quello strumento non c'è (per esempio nell'app desktop): scrivi il file `~/.claude/skills/coduet-config/SKILL.md`. Poi **dillo chiaramente all'utente**: questa configurazione la vedono solo le sessioni su questo PC; le sessioni cloud e gli altri computer usano i valori di partenza. Se le scelte salvate differiscono dai valori di partenza e l'utente lavora anche nel cloud, spiegagli che può aggiungere la stessa skill al suo account dalle impostazioni dell'app (sezione delle skill), caricando quel file o creando una skill `coduet-config` con lo stesso contenuto, e che dopo ogni modifica dovrà aggiornare anche quella copia. Se le scelte coincidono con i valori di partenza, basta dirgli che per ora nel cloud non cambia nulla.
-  - Se esistono **due copie** (account e PC), aggiorna quella che stai usando e ricorda all'utente di allineare l'altra.
-- **Annulla**: non cambiare niente.
+## Step 6: save
 
-Se l'utente sceglie "per questo progetto" ma non sei in un progetto, diglielo e proponi le altre due opzioni.
+Show the changes (old, new) and ask with AskUserQuestion:
+- **Save for this project**: write or update `.coduet.md` with only the changed items, where all project sessions see it, and push it. Running sessions apply it from their next phase.
+- **Save in my personal configuration**: write the full updated `coduet-config` with the template below. Valid from the next sessions in all projects (except items a project overrides). For a running session, give the user a prompt to reload `coduet:start`. Where:
+  - **In the account**, if the session has a tool to propose or save skills: use it (valid everywhere).
+  - **Only on the PC** otherwise: write `~/.claude/skills/coduet-config/SKILL.md` and **say so clearly**: only sessions on this PC see it; cloud sessions and other computers use the defaults. If it differs from the defaults and the user also works in the cloud, explain they can add the same skill to their account from the app settings (skills section) and must keep both copies aligned.
+  - Two copies: update the one in use and remind to align the other.
+- **Cancel**: change nothing.
 
-### Modello della skill personale `coduet-config`
+"For this project" outside a project: say so and offer the other two.
+
+### `coduet-config` template
 
 ```markdown
 ---
 name: coduet-config
-description: Configurazione personale del plugin Coduet. Non va usata da sola: la leggono coduet:start e coduet:settings.
+description: Personal configuration of the Coduet plugin. Not used on its own: coduet:start and coduet:settings read it.
 ---
 
-# Configurazione personale di Coduet
+# Coduet personal configuration
 
-Ultimo aggiornamento: <data>. Contiene solo le voci diverse dai valori di partenza del plugin; per le altre valgono quelli.
+Last update: <date>. Only items that differ from the plugin defaults.
 
-## Skill per fase
+## Phase skills
 
-| Fase | Skill (in ordine) |
+| Phase | Skill (in order) |
 |---|---|
-| <fase> | <skill> |
+| <phase> | <skill> |
 
-## Verifiche aggiuntive
+## Extra checks
 
-| Fase | Verifica |
+| Phase | Check |
 |---|---|
-| <fase> | <verifica> |
+| <phase> | <check> |
 
-## Parametri
+## Parameters
 
-| Parametro | Valore |
+| Parameter | Value |
 |---|---|
-| <parametro> | <valore> |
+| <parameter> | <value> |
 ```
 
-Togli le sezioni vuote. Se dopo una modifica una voce torna uguale al valore di partenza, toglila.
+Drop empty sections. An item that goes back to its default is removed. Write the content in the user's language if they prefer; parameter names may stay in English.
 
-## Regole
+## Rules
 
-- Non cambiare nulla senza la scelta esplicita del Passo 6.
-- Non modificare i file del plugin né le regole di lavoro di `coduet:start`: se l'utente chiede di cambiare come funziona Coduet (non solo scelte e valori), spiegagli che è una modifica al plugin e proponigli un testo pronto da inviare come segnalazione al repository del plugin (indicato nel suo `plugin.json` alla voce `repository`).
-- Non modificare altre skill: puoi solo scegliere quali usare.
-- Se nel progetto c'è un lavoro in corso, non toccarlo: di' solo da quando varranno le modifiche.
+- Change nothing without the explicit choice of Step 6.
+- Requests to change how Coduet works (not just values) are plugin changes: offer a ready-to-send issue for the plugin repository (`repository` in `plugin.json`).
+- Don't touch running work: just say when changes take effect.

@@ -1,646 +1,183 @@
 ---
 name: start
-description: Usa quando l'utente scrive "avvia Coduet", "coduet start", "dividiamo il lavoro con Codex" o simili, all'avvio di un progetto o in un progetto in corso: chiede se dividere il lavoro con Codex e coordina piano, esecuzione parallela, revisione, consegne e ripresa automatica.
+description: Use when the user says "avvia Coduet", "start Coduet", "coduet start", "dividiamo il lavoro con Codex", "split the work with Codex" or similar, at the start of a project or in one already running. Splits the work between Claude and Codex CLI and coordinates plan, parallel runs, review, handoffs and automatic resume.
 ---
 
 # Coduet: start (Claude Code + Codex)
 
-Questa skill (parte del plugin Coduet) fa da regista. Il metodo di lavoro (ideazione, piano, esecuzione, revisione) lo danno le skill indicate nella sezione "Configurazione"; questa skill aggiunge la divisione del lavoro con Codex CLI (account ChatGPT dell'utente), il ciclo di approvazione degli asset, il passaggio di consegne quando una quota finisce e la ripresa automatica di Codex.
+This skill directs the work. The working method (brainstorm, plan, execution, review) comes from the phase skills in "Configuration"; this skill adds: splitting work with Codex CLI (the user's ChatGPT account), the asset approval loop, handoffs when a quota runs out, and Codex's automatic resume.
 
-Rispondi nella lingua dell'utente. L'utente descrive il progetto e risponde alle domande delle skill in modo normale: non chiedergli formati di prompt particolari.
+- **Reply in the user's language.** Every message below is a template: translate it.
+- Works for any project: adapt commands and conventions to the project at hand. "GitHub" means the project's remote (GitHub, GitLab, ...); "PR" includes merge requests.
+- **Load a reference file only when its step happens** (paths are relative to this skill's folder). Don't read them up front.
+- **Scripts** live in the plugin folder, two levels above this skill: `scripts/windows/*.ps1` (run with `powershell -NoProfile -ExecutionPolicy Bypass -File "<script>" <args>`) and `scripts/unix/*.sh` (run with `bash "<script>" <args>`). They print `key=value` lines. Use them instead of writing commands by hand.
 
-**Questa skill vale per qualsiasi progetto.** Adatta ogni regola al progetto in cui ti trovi (linguaggio, strumenti, comandi, convenzioni) invece di presumere un caso particolare. Dove scrive "GitHub" si intende il repository remoto del progetto (GitHub, GitLab, Bitbucket o altro); dove scrive "PR" vale anche per le merge request.
+## Messages to the user
 
-## Configurazione
+The user can't see Codex, schedulers or checks. Say what is happening at **every** step, one or two lines each, starting with `Coduet ·`. Never stay silent while waiting.
 
-Le scelte modificabili hanno tre livelli; per ogni voce vale il livello più specifico:
-1. **Valori di partenza**: le tabelle qui sotto, che arrivano con il plugin e cambiano solo con un aggiornamento del plugin.
-2. **Configurazione personale**: la skill personale `coduet-config` dell'utente, se esiste: nel suo account oppure, solo su quel PC, in `~/.claude/skills/coduet-config/SKILL.md`. Contiene solo le voci che l'utente ha cambiato. Caricala con il tool Skill (oppure leggine il `SKILL.md`). In una sessione cloud una copia salvata solo sul PC non è visibile: in quel caso valgono i valori di partenza.
-3. **Configurazione del progetto**: il file `.coduet.md` del progetto, se esiste (vedi "Come si applica la configurazione").
-
-Le scelte si cambiano solo con la skill `coduet:settings` (o su richiesta esplicita dell'utente), mai durante il lavoro di propria iniziativa. Non modificare mai i file del plugin.
-
-### Skill per fase
-
-| Fase | Skill da caricare con il tool Skill (in ordine) |
+| When | Message (template) |
 |---|---|
-| Ideazione | `superpowers:brainstorming` |
-| Piano | `superpowers:writing-plans` |
-| Esecuzione dei task di Claude | `superpowers:subagent-driven-development` |
-| Isolamento dei task di Codex | `superpowers:using-git-worktrees` |
-| Revisione | `superpowers:requesting-code-review` |
-| Verifica finale | `superpowers:verification-before-completion` |
+| Start | `Coduet · <where: PC session in <folder> / cloud session / ...>. Codex: <available vX / not reachable from here, because ...>.` |
+| Checks done | `Coduet · Project copy ok (branch X, up to date, tests pass)` or what is wrong and what you'll do. |
+| Plan split | `Coduet · Plan: N tasks to Claude, M to Codex.` + short list, then ask to confirm. |
+| Codex starts | `Coduet · ▶ Codex started: <task> (<time>, est. <n> min). I'll tell you when it finishes; meanwhile you can keep writing to me.` |
+| Codex queued | `Coduet · ⏳ <task> queued: <n> Codex tasks already running.` |
+| Progress | Only on a new step or when asked: `Coduet · Codex on <task>, <n> min: <last line in plain words>.` |
+| Waiting idle | `Coduet · Waiting for Codex (<task>, <n> min). Nothing else to do meanwhile.` |
+| Codex done | `Coduet · ✓ Codex finished <task>: <n> files, <tokens> tokens. Now I review it.` |
+| Review | `Coduet · Review of <task>: <merged into X / fixed and merged / sent back to Codex / taken over by me>.` |
+| Codex quota | `Coduet · ⏸ Codex quota used up on <task>. Work so far is kept. Auto-resume at <time>; I check at <time>; if both fail you get a desktop notice at <time>. Nothing for you to do.` |
+| Resume outcome | `Coduet · ↻ Resume of <task>: <completed / still no quota, rescheduled for <time> / failed: <reason>, <what you did>>.` |
+| Claude quota | `Coduet · Claude quota running low: saved the state, <n> tasks handed to Codex, the rest waits for me.` |
+| Update | `Coduet · ⬆ Coduet <new> available (you have <old>): <highlights>.` After updating: `Coduet · Updated to <new>. Open a new session/thread to use it; this one continues on <old>.` |
+| End | `Coduet · ■ Done: <summary>. Codex: <n> tasks, <tokens> tokens.` |
 
-### Verifiche aggiuntive
+If the session has a task list, add one item per Codex task (`Codex: <task>`) and update it at each change.
 
-| Fase | Verifica |
+## Configuration
+
+Three levels, the most specific wins: (1) defaults below, shipped with the plugin; (2) the user's personal skill `coduet-config` (account or `~/.claude/skills/coduet-config/SKILL.md`; not visible from cloud sessions), only changed values; (3) the project file `.coduet.md` (root, or next to the plan). Values change only through `coduet:settings` or an explicit user request. Never edit plugin files.
+
+**Phase skills** (load with the Skill tool, in order):
+
+| Phase | Skill |
 |---|---|
-| (nessuna) | |
+| Brainstorm | `superpowers:brainstorming` |
+| Plan | `superpowers:writing-plans` |
+| Claude's tasks | `superpowers:subagent-driven-development` |
+| Codex isolation | `superpowers:using-git-worktrees` |
+| Review | `superpowers:requesting-code-review` |
+| Final check | `superpowers:verification-before-completion` |
 
-### Parametri
+Extra checks: none.
 
-| Parametro | Valore |
+**Parameters:**
+
+| Parameter | Default |
 |---|---|
-| Piano Claude | non indicato |
-| Accesso Codex | non indicato |
-| Criterio di delega a Codex | risparmio della quota di Claude |
-| Domanda iniziale sulla divisione con Codex | chiedi sempre |
-| Soglia "lavoro piccolo" (task) sotto cui proporre di non usare Codex | 4 |
-| Task Codex contemporanei, in totale su tutti i progetti | 2 |
-| Ragionamento Codex predefinito | medium |
-| Asset di prova per tipo prima della produzione | 2-3 |
-| Rigenerazioni automatiche di un asset dopo un controllo fallito | 2 |
-| Nuovi tentativi di Codex dopo una revisione negativa | 1 |
-| Stima del reset quota se non noto (ore dall'errore) | 5 |
-| Margine della ripresa dopo il reset (minuti) | 5 |
-| Controllo di Claude dopo la ripresa | attivo, dopo 20 minuti |
-| Avviso di riserva dopo la ripresa (minuti) | 40 |
-| Misure del consumo del controllo di Claude | 3 |
-| Generazione di immagini con Codex | sì |
-| Tetto di spesa Codex per sessione (solo con chiave API) | nessuno |
+| Claude plan / Codex access | not set |
+| Delegation rule | save Claude's quota |
+| Ask whether to split with Codex | always |
+| "Small job" threshold (tasks) | 4 |
+| Concurrent Codex tasks, all projects | 2 |
+| Codex reasoning | medium |
+| Trial assets per type | 2-3 |
+| Automatic asset regenerations | 2 |
+| Codex retries after a failed review | 1 |
+| Quota reset estimate if unknown (hours) | 5 |
+| Resume margin after reset (minutes) | 5 |
+| Claude check after resume | on, after 20 minutes |
+| Backup notice after resume (minutes) | 40 |
+| Measurements of the Claude check's cost | 3 |
+| Image generation with Codex | yes |
+| Codex spending cap per session (API key only) | none |
 
-### Profili per piano
+Defaults equal Claude Pro + ChatGPT Plus. Other plans: `reference/profiles.md`. If a phase skill is missing, say so in one line, suggest `coduet:settings`, and use `reference/base-method.md`. Several skills for a phase run in order. For the Claude method the phase skills win; for everything about Codex, this skill wins. Re-read `.coduet.md` at each phase and before each Codex task; changes apply to work started after them.
 
-I valori di partenza qui sopra corrispondono a **Claude Pro + ChatGPT Plus**, ed equivalgono a "piano non indicato". Quando l'utente indica i suoi piani, `coduet:settings` propone di salvare nella configurazione personale i valori del profilo corrispondente; l'utente può accettarli o ritoccarli.
+## Start sequence (every start or resume)
 
-**Accesso Codex** (valori per i parametri indicati; quelli non elencati restano i valori di partenza):
+1. **Configuration**: read the three levels; check the phase skills exist.
+2. **First use**: if `coduet-config` doesn't exist, offer in one line the initial setup (`coduet:settings`, about 2 minutes: plans, phase skills, `claude` command, local folder). If declined, go on with defaults.
+3. **Where you are** (table below) and the Start message.
+4. **Updates** (PC sessions only): run `coduet-update check`. If `update=yes`, follow `reference/updates.md`. If `cli=missing`, also see there. If the check fails, say nothing.
+5. **Pending work**: if the plan's "Codex waiting for quota" isn't "none", or `codex-status` shows tasks, apply `reference/resume.md` § Check first. Remind pending asset approvals (`assets/_bozze/anteprima.html`) and undiscussed improvement proposals in `docs/codex-registro.md`.
+6. **Plans not set**: if Claude plan or Codex access are "not set" and `~/.coduet/preferenze.txt` doesn't say `plans: don't ask`, offer once, at a stable moment: "Set now" / "Leave it" / "Don't ask again" (writes that line). Not in cloud sessions.
 
-| Parametro | ChatGPT Free / Go | ChatGPT Plus, Business (partenza) | ChatGPT Pro | Chiave API |
-|---|---|---|---|---|
-| Task Codex contemporanei | 1 | 2 | 3 | 2 |
-| Ragionamento Codex predefinito | low | medium | medium | medium |
-| Soglia "lavoro piccolo" | 6 | 4 | 3 | 4 |
-| Asset di prova per tipo | 1-2 | 2-3 | 3 | 2 |
-| Rigenerazioni automatiche | 1 | 2 | 3 | 1 |
-| Generazione di immagini con Codex | no | sì | sì | sì |
-| Tetto di spesa Codex per sessione | nessuno | nessuno | nessuno | da chiedere all'utente |
+### Where you are: which sessions can run Codex
 
-Enterprise, Edu e piani non elencati: usa il profilo Plus, salvo indicazioni diverse dell'utente.
+Codex is installed only on the user's computer, so Codex tasks run only where its commands work.
 
-**Piano Claude:**
-
-| Piano Claude | Criterio di delega a Codex |
-|---|---|
-| Pro (partenza) | risparmio della quota di Claude |
-| Max, Team, Enterprise, API/Console | solo dove Codex conviene |
-
-Con il piano Free di Claude, Claude Code non è disponibile: Coduet non può funzionare.
-
-**Effetti sul comportamento** (oltre ai parametri):
-- **Criterio "risparmio della quota di Claude"**: segui i criteri di assegnazione del Passo 3 così come sono.
-- **Criterio "solo dove Codex conviene"**: la quota di Claude non è il problema principale; assegna a Codex solo gli asset e i task meccanici di grande volume, il resto a Claude.
-- **Generazione di immagini = no** (ChatGPT Free/Go): non chiedere immagini a Codex; per gli asset grafici proponi grafica vettoriale o via codice, asset di libreria, oppure immagini fornite dall'utente.
-- **Accesso Codex con chiave API**: non ci sono quote che si azzerano, quindi il Passo 8 (ripresa automatica) non si usa; si paga a consumo. Tieni il conto dei token usati da Codex nella sessione (li stampa a fine task) e, se c'è un tetto di spesa, fermati e chiedi all'utente prima di superarlo.
-- **ChatGPT Free/Go**: la quota è piccola; assegna a Codex solo task piccoli e prevedi che la ripresa automatica scatti spesso.
-
-### Come si applica la configurazione
-
-- **Ordine**: valori di partenza, poi `coduet-config`, poi `.coduet.md`. Il file del progetto sta nella radice del progetto o, se il lavoro è su più branch, nello stesso posto del piano (vedi "Dove sta il piano"). Le voci che un livello non contiene restano quelle del livello precedente.
-- **Rileggi la configurazione del progetto all'inizio di ogni fase e prima di ogni task Codex** (e all'inizio di ogni fase fai anche il controllo aggiornamenti, che si ripete al massimo una volta al giorno): così le modifiche fatte con le impostazioni valgono subito, anche per una sessione già in corso. Le modifiche alla configurazione personale valgono invece dalla ricarica successiva della skill.
-- **Piani non indicati**: se "Piano Claude" o "Accesso Codex" risultano "non indicato" e in `~/.coduet/preferenze.txt` non c'è "piani: non chiedere", proponi all'utente **una sola volta**, in una riga e in un momento stabile (all'avvio o all'inizio di una fase, mai a metà di un task), di indicarli: "Indica ora" (avvia `coduet:settings` per i piani), "Lascia così" (non chiederlo più in questa sessione), "Non chiedere più" (scrivi "piani: non chiedere" in quel file). Nelle sessioni cloud non chiederlo. In ogni caso il comportamento resta quello dei valori di partenza (profilo Plus).
-- **Lavoro già in corso**: un cambio di configurazione o di profilo vale solo da quel momento in poi. I task Codex già lanciati finiscono come sono partiti, le riprese già pianificate mantengono i loro orari, e i nuovi limiti valgono per i task lanciati dopo.
-- **Primo utilizzo**: se la skill personale `coduet-config` non esiste, all'avvio proponi all'utente in una riga di fare la configurazione iniziale con `coduet:settings` (un paio di minuti). Se preferisce di no, prosegui con i valori di partenza.
-- **Skill per fase, in tre livelli**:
-  1. la skill (o le skill) indicate per quella fase, se sono installate;
-  2. se una skill indicata non è disponibile (disinstallata, rinominata, mai installata), dillo all'utente in una riga e proponi di scegliere un'alternativa con `coduet:settings`; nel frattempo usa il livello 3;
-  3. il **metodo base** qui sotto.
-- **Più skill per la stessa fase**: usale nell'ordine indicato, una dopo l'altra. Ricorda all'utente, la prima volta, che più skill per fase consumano più quota.
-- **Conflitti tra regole**: per il metodo di lavoro di Claude valgono le skill di fase. Per tutto ciò che riguarda Codex (uso solo di `codex exec`, branch `codex/<task>`, revisione prima dell'unione, segreti, registro globale, ripresa) valgono le regole di questa skill, anche se una skill di fase dice diversamente.
-- **Questa skill non modifica mai altre skill**: sceglie solo quali usare.
-- **Verifiche aggiuntive**: eseguile nella fase indicata, oltre a quelle previste.
-
-### Metodo base (quando per una fase non c'è nessuna skill)
-
-| Fase | Metodo base |
-|---|---|
-| Ideazione | Domande una alla volta su obiettivo, utenti, vincoli e cosa resta fuori; proponi 2-3 approcci con pro e contro; scrivi una breve specifica e falla approvare |
-| Piano | Task piccoli e indipendenti, ciascuno con file coinvolti, passi, comando di verifica ed esecutore; ordinati per dipendenze; piano salvato in un file e approvato dall'utente |
-| Esecuzione dei task di Claude | Un task alla volta; dopo ogni task esegui la verifica, fai un commit e aggiorna il piano |
-| Isolamento dei task di Codex | `git worktree add` come descritto al Passo 5 |
-| Revisione | Fa quello che chiedeva il task? I comandi di verifica passano? Nessun segreto né file di lavoro nel diff? Nessun file fuori dal perimetro? Stile coerente con il progetto? Casi limite e errori gestiti? |
-| Verifica finale | Esegui tutti i comandi di verifica, controlla ogni requisito uno per uno, mostra le prove; non dichiarare finito senza prove |
-
-## Prima di tutto: configurazione e riprese in sospeso
-
-A ogni avvio o ripresa della skill, **per prima cosa** leggi la configurazione (valori di partenza, `coduet-config`, `.coduet.md`), controlla che le skill di fase siano disponibili e fai il controllo aggiornamenti (vedi "Controllo aggiornamenti di Coduet"). Poi, se nel piano la riga "Codex in attesa di quota" non è "nessuno", oppure esistono file `.codex-ripresa.log` nei worktree `../<progetto>-codex-*`, applica il Passo 8.6 prima di proseguire (in una sessione cloud, che non vede i file sul PC, basati solo sullo stato scritto nel piano). Se esiste `assets/_bozze/anteprima.html` con asset in attesa di approvazione, ricordalo all'utente. Se in `docs/codex-registro.md` ci sono "Proposte per migliorare Coduet" non ancora discusse, ricordale all'utente in una riga.
-
-## Controllo aggiornamenti di Coduet
-
-Prima di tutto, nelle sessioni sul PC, verifica che l'aggiornamento dalla chat sia possibile ("Comando `claude` sul PC", qui sotto).
-
-Il controllo si fa in tre momenti: **sempre** all'avvio della skill, all'inizio di ogni fase nelle sessioni lunghe (al massimo una volta al giorno), e alla fine del lavoro (Passo 9). Se l'utente chiede di controllare gli aggiornamenti, controlla subito. Mai più di un avviso per sessione, a meno che nel frattempo esca una versione ancora più nuova.
-
-1. **Versione installata**: con `claude plugin list` (riga `Version` del plugin `coduet@<marketplace>`), oppure leggendo `.claude-plugin/plugin.json` nella cartella del plugin (due livelli sopra la cartella di questa skill).
-2. **Ultimo controllo**: leggi `~/.coduet/ultimo-controllo.txt` (data, ora e ultima versione trovata). Usalo solo per i controlli a metà sessione: se uno è già stato fatto oggi, non ripetere la richiesta. All'avvio della skill e su richiesta dell'utente controlla sempre, senza usare il risultato salvato.
-3. **Versione più recente**: leggi il campo `repository` di `plugin.json` e scarica `https://raw.githubusercontent.com/<proprietario>/<repository>/main/plugins/coduet/.claude-plugin/plugin.json`; per le novità scarica allo stesso modo `CHANGELOG.md` dalla radice del repository. Salva data e versione in `~/.coduet/ultimo-controllo.txt`.
-4. **Se il controllo non riesce** (nessuna connessione, rete bloccata, file non trovato): non dire niente e prosegui.
-5. **Se c'è una versione più recente**, avvisa l'utente in poche righe: versione installata, versione nuova, quante versioni ha saltato, e le novità principali di tutte le versioni saltate (dal CHANGELOG). Poi chiedi con AskUserQuestion: "Aggiorna ora" oppure "Più tardi". Il lavoro non si blocca in nessun caso.
-6. **"Aggiorna ora"**, secondo come è installato Coduet:
-   - **Comando `claude` disponibile sul PC** (`claude --version` funziona): esegui `claude plugin marketplace update <marketplace>` e poi `claude plugin update coduet@<marketplace>`, con il nome del marketplace preso da `claude plugin list`. Controlla con `claude plugin list` che la versione sia cambiata.
-   - **Marketplace da una cartella locale** (lo vedi con `claude plugin marketplace list`): esegui `git pull` in quella cartella.
-   - **Comando `claude` non disponibile**: proponi di installarlo ora (vedi sotto); se l'utente non vuole, spiegagli che può aggiornare dal pannello dei plugin dell'app: Directory → Plugin → Code → `···` accanto al marketplace → Verifica aggiornamenti → ingranaggio su Coduet → Aggiorna.
-   - **Sessione cloud**: non aggiornare; di' solo che la versione nuova esiste.
-7. **Dopo l'aggiornamento** di' all'utente di scrivere `/reload-plugins` oppure di aprire una nuova sessione: fino ad allora questa sessione continua con le istruzioni già caricate. In interfacce dove i comandi con la barra non vengono eseguiti (per esempio i thread di un progetto), di' direttamente di aprire un thread nuovo. Ricorda anche che l'aggiornamento vale per tutte le sessioni sul PC.
-8. **"Più tardi"**: prosegui; ricordalo in una riga solo alla fine del lavoro (Passo 9).
-
-Non aggiornare mai senza il consenso esplicito dell'utente.
-
-### Comando `claude` sul PC
-
-L'aggiornamento dalla chat richiede il comando `claude` da terminale (Claude Code CLI). L'app desktop di Claude non lo installa, ma usa la stessa configurazione (`~/.claude`), quindi un plugin aggiornato da terminale risulta aggiornato anche nell'app (verificato).
-
-1. **Controllo**, solo nelle sessioni sul PC: esegui `claude --version`. Se non risponde, prova anche il percorso dell'installazione standard (Windows: `$env:USERPROFILE\.local\bin\claude.exe --version`; macOS e Linux: `~/.local/bin/claude --version`): se lì risponde, il comando c'è ma la sua cartella non è nel PATH (vai al punto 4).
-2. **Se manca**, e in `~/.coduet/claude-cli.txt` non c'è scritto "non chiedere", chiedi con AskUserQuestion: "Installa ora (consigliato)", "Più tardi", "Non chiedere più". Spiega in una riga a cosa serve: aggiornare Coduet dalla chat invece che dai menu. Con "Non chiedere più" scrivi "non chiedere" in quel file; con "Più tardi" richiedilo solo alla sessione successiva.
-3. **Installazione**, solo con il consenso dell'utente, con il comando ufficiale:
-   - Windows (PowerShell): `irm https://claude.ai/install.ps1 | iex`
-   - macOS e Linux: `curl -fsSL https://claude.ai/install.sh | bash`
-4. **PATH**: se l'installazione avvisa che la cartella non è nel PATH, aggiungila per l'utente, solo se non c'è già:
-   - Windows: `$d = "$env:USERPROFILE\.local\bin"; $p = [Environment]::GetEnvironmentVariable("Path","User"); if (($p -split ';') -notcontains $d) { [Environment]::SetEnvironmentVariable("Path", "$p;$d", "User") }`
-   - macOS e Linux: aggiungi `export PATH="$HOME/.local/bin:$PATH"` al file di avvio della shell dell'utente, se manca.
-5. **Verifica** con il percorso completo (vale anche prima che il nuovo PATH sia attivo): `<percorso>/claude --version` e `<percorso>/claude plugin list`, dove deve comparire Coduet. Fino al riavvio dell'app, usa il percorso completo per i comandi di aggiornamento.
-6. **Avvisa l'utente** che, per far vedere il comando `claude` a tutte le sessioni, va chiusa e riaperta l'app di Claude (e i terminali aperti).
-7. Se l'installazione non riesce, spiega il motivo in breve, indica la [guida ufficiale](https://code.claude.com/docs/en/setup) e prosegui con il lavoro.
-
-## Passo preliminare: dove si trova il progetto
-
-Codex è installato solo sul PC dell'utente. Prima di tutto:
-- **Sistema operativo del PC**: Windows, macOS o Linux. I comandi di Codex sono gli stessi; cambiano script, pianificazione e avvisi (vedi Passo 8 e le note per sistema in fondo).
-- **Git e repository remoto**: vedi "Progetti senza git o senza repository remoto" qui sotto.
-
-Poi capisci in quale situazione sei:
-
-| Situazione | Come riconoscerla | Cosa fare |
+| Situation | How to tell | What to do |
 |---|---|---|
-| A. Sessione sul PC, progetto già nella cartella | `codex --version` funziona e la cartella contiene il progetto (repository git) | Fai i controlli della copia locale (sotto), poi prosegui |
-| B. Sessione sul PC, progetto solo su GitHub (finora sviluppato in cloud) | `codex` funziona, ma la cartella è vuota o non contiene il progetto | Scarica il progetto (sotto), poi prosegui |
-| C. Sessione cloud che può avviare sessioni sul PC | Sei in un ambiente cloud (Linux) e puoi avviare una sessione sul PC dell'utente o eseguire comandi lì | Proponi prima il lavoro in locale (sotto); altrimenti modalità ibrida |
-| D. Sessione cloud non collegata al PC | Ambiente cloud senza accesso al PC | Codex non è raggiungibile: dillo all'utente e proponi di collegare il PC o di aprire una sessione sul PC; altrimenti prosegui senza Codex |
+| A. PC session, project in the folder | `codex --version` works, folder is the project | `check-copy`, then go on |
+| B. PC session, project only on the remote | `codex` works, folder empty or other | Download it: `reference/local-copy.md` |
+| C. Cloud session linked to the PC | cloud (Linux) and you can run commands or start sessions on the PC | Propose working locally; else hybrid: `reference/hybrid.md` |
+| D. Cloud session, no PC | no way to reach the PC | Codex unreachable: say why and how to fix (open a session on the PC, or set the project's local default folder); go on without Codex if the user wants |
 
-### Proporre il lavoro in locale (situazione C)
+In A and B, also read `reference/local-copy.md` the first time on a project (copy checks, secrets, no-git projects). Golden rule with a remote: every session syncs with it at the start and pushes at the end; the plan's "PC copy" line names the only local copy to use. Never delete, move or overwrite user files or changes without an explicit ok.
 
-Lavorare direttamente in una sessione sul PC è più semplice e completo della modalità ibrida. Se sei in una sessione cloud di un progetto ma il PC dell'utente è collegato, proponi in poche righe, una volta per progetto:
-- di impostare nel progetto una **cartella locale predefinita** sul PC (nelle impostazioni del progetto, sezione dell'ambiente locale: aggiungere la cartella della copia del progetto e renderla predefinita), così i thread del progetto lavorano direttamente lì;
-- oppure di aprire una sessione di Code sul PC in quella cartella.
-I nomi dei menu possono cambiare tra le versioni dell'app: descrivi lo scopo, non solo il percorso. Se l'utente preferisce restare nel cloud, prosegui con la modalità ibrida.
+## Mode
 
-### Regola d'oro: GitHub è la copia di riferimento
+- **New project** (no code, no plan): all steps.
+- **Running project**: skip Step 2; read the latest plan, `CLAUDE.md`, `git status`, `git log -10 --oneline`. Don't rewrite the plan: add the status section and `Executor` only to open tasks. No plan: ask what to work on and write one.
 
-Vale quando il progetto ha un repository remoto (vedi "Progetti senza git o senza repository remoto" per gli altri casi).
+## Step 0: split or not
 
-- Ogni sessione, cloud o sul PC, **all'inizio** si allinea con GitHub e **alla fine** (o prima di passare il lavoro all'altra parte) invia su GitHub tutto il lavoro salvato. Non lasciare mai lavoro solo in locale o solo nel cloud quando si cambia ambiente.
-- Nel piano, nella sezione "Stato e passaggio di consegne", la riga **"Copia sul PC"** indica il percorso dell'unica copia locale da usare. Il piano sta su GitHub, quindi lo vedono sia le sessioni cloud sia quelle sul PC.
-- Non cancellare, spostare o sovrascrivere mai cartelle o modifiche dell'utente senza il suo ok esplicito.
+Ask with AskUserQuestion: "Split the work with Codex?" — Yes, full split / Only assets, tests and docs / No, I'll do it all. Don't ask if Codex is unreachable (say it). If the parameter is fixed, apply it and say so. Below the small-job threshold, suggest "No" in one line but let the user choose.
 
-### Dove sta il piano
+## Step 1: Codex check
 
-- Se si lavora su un solo branch (o su `main`), il piano sta in quel branch.
-- Se il lavoro è distribuito su più branch o PR (una per funzione), il piano **non** va messo nel branch di una singola funzione, perché le altre sessioni non lo vedrebbero. Usa un branch dedicato `coordinamento`, che contiene solo il piano e i registri: tutte le sessioni lo leggono con `git fetch` e `git show origin/coordinamento:<percorso piano>` e lo aggiornano con commit su quel branch.
-- I registri del progetto (`docs/codex-registro.md`) e il file di configurazione del progetto stanno nello stesso posto del piano.
-- `AGENTS.md` deve stare dove Codex lavora: proponilo all'utente come piccola PR su `main` da unire subito (senza repository remoto: un commit su `main`, con il suo ok). Finché non è unito, includi le sue regole all'inizio di ogni prompt per Codex.
+`codex --version` and `codex login status`. Missing or logged out → say so, go on without Codex. Verified with Codex CLI **0.163.0**: on another version, check `codex exec --help` and `codex exec resume --help` still have `--sandbox workspace-write`, `--cd`, `-o`, `-c`, `resume <id> <prompt>`; adapt and note it for Step 9. If Claude Code asks permission at every Codex launch, offer to allow the Coduet scripts once (project permission rule); nothing else. Before assigning a lot to Codex, ask how much quota is left (`/status` in Codex or chatgpt.com/settings/usage).
 
-### Se più PR vengono riunite in una
+## Step 2: brainstorm (new project only)
 
-Se decidi (o l'utente decide) di riunire più branch o PR in una sola:
-1. Chiedi prima conferma all'utente.
-2. Registra nel piano quali PR confluiscono, in quale branch e perché.
-3. Chiudi le PR assorbite con un commento che rimanda alla nuova.
-4. Aggiorna il **branch di base** di tutti i task Codex aperti o in coda che puntavano ai branch assorbiti; i branch `codex/*` già esistenti vanno riallineati sul nuovo branch di base prima della revisione.
-5. Aggiorna anche lo stato nel piano e il registro del progetto.
+Load the Brainstorm skill and follow it.
 
-### Progetti senza git o senza repository remoto
+## Step 3: plan with executors
 
-- **Git con repository remoto** (GitHub, GitLab, Bitbucket...): caso normale, tutto come descritto.
-- **Git senza repository remoto**: funzionano solo le situazioni A e B; la modalità ibrida (C) non è possibile, perché cloud e PC non hanno un punto in comune. Dillo all'utente e proponi di aggiungere un repository remoto se vuole lavorare anche dal cloud.
-- **Nessun git**: proponi all'utente di attivarlo (`git init` e un primo commit), spiegando che serve a separare il lavoro di Codex e a tornare indietro. Solo con il suo ok. Se rifiuta: fai prima un backup della cartella, poi per ogni task Codex lavora su una copia `../<progetto>-codex-<task>`; alla fine confronta le due cartelle, rivedi le differenze e riporta tu le modifiche approvate. Niente modalità ibrida né worktree.
+Load the Plan skill, with these additions:
 
-### File segreti e configurazioni locali
-
-Molti progetti hanno file che non stanno nel repository: `.env`, chiavi, credenziali, configurazioni locali.
-- **Riconoscili**: file di esempio (`.env.example`, `*.example`, `*.sample`), file elencati in `.gitignore`, istruzioni nel README, errori di build o test per variabili mancanti.
-- **I segreti non passano mai** dalla chat, dal piano, dai prompt per Codex o da git. Se in una copia mancano, di' all'utente quali file creare e da quale esempio partire, e aspetta che li crei lui.
-- Se un task ha bisogno di segreti per funzionare o per essere verificato, assegnalo a Claude nell'ambiente dove i segreti esistono, non a Codex.
-- Nei prompt per Codex aggiungi: "Non leggere, stampare o modificare file di segreti o configurazioni locali (`.env` e simili)."
-- Prima di ogni commit controlla che nessun file di segreti venga incluso.
-
-### File di lavoro della skill
-
-I file che la skill crea per sé (`.codex-prompt.md`, `.codex-esito.md`, `.codex-output*.txt`, `.codex-ripresa.log`, gli script di ripresa) non devono finire nei commit. Aggiungili a `.git/info/exclude` della copia locale: vale solo su quella copia e non modifica il progetto.
-
-### Cercare una copia già esistente (prima di scaricare)
-
-1. Se il piano indica già una "Copia sul PC" e quella cartella esiste, usala.
-2. Altrimenti chiedi all'utente se ha già scaricato il progetto e dove. Puoi anche cercare tra le cartelle a cui hai accesso un repository con lo stesso indirizzo remoto (`git remote -v`).
-3. Se trovi **più copie**, mostrale all'utente (percorso, branch, data dell'ultimo commit, modifiche non salvate) e chiedigli quale usare. Le altre non si toccano: suggerisci all'utente di archiviarle o eliminarle lui, così non si confonde.
-4. Registra la copia scelta nel piano ("Copia sul PC").
-
-### Controlli della copia locale (sempre, prima di iniziare)
-
-Sulla copia scelta, o appena scaricata:
-1. **Progetto giusto**: `git remote -v` deve puntare al repository del progetto. Se la cartella non è un repository git o punta a un altro repository, non toccarla e chiedi all'utente un'altra cartella.
-2. **Modifiche non salvate** (`git status`): se ci sono, chiedi all'utente se salvarle con un commit, metterle da parte (`git stash`) o scartarle. Non scartarle mai senza un ok esplicito.
-3. **Fine riga di Windows**: se `git status` mostra come modificati moltissimi file senza vere differenze, il problema sono le terminazioni di riga (CRLF). Spiegalo all'utente e imposta `git config core.autocrlf true` solo per quella copia, prima di qualsiasi commit.
-4. **Branch**: controlla su quale branch è la copia. Se non è quello su cui si lavora, passa a quello giusto solo se non ci sono modifiche in sospeso.
-5. **Allineamento con il remoto** (`git fetch`, poi confronta):
-   - se la copia è solo indietro: `git pull`;
-   - se ha commit locali non ancora sul remoto: inviali (`git push`) dopo averlo detto all'utente;
-   - se è sia avanti sia indietro: `git pull --rebase`; se ci sono conflitti, risolvili tu e chiedi all'utente quando toccano scelte di progetto.
-6. **Lavoro precedente di Codex**: controlla `git worktree list` e i branch `codex/*` rimasti da sessioni precedenti; gestiscili con il Passo 8.6 o con la revisione (Passo 6) prima di crearne di nuovi.
-7. **Segreti e configurazioni locali**: verifica che ci siano quelli necessari (vedi sopra); se mancano, dillo all'utente.
-8. **File di lavoro della skill** esclusi in `.git/info/exclude` (vedi sopra).
-9. **Dipendenze**: se mancano (es. nessuna cartella `node_modules`) o sono cambiate dall'ultima volta, installale come indicato nel README.
-10. **Funziona**: esegui i comandi di verifica del progetto (test, build, o quanto indicato in "Progetti senza test"). Se falliscono già prima di iniziare, dillo all'utente: non è colpa del lavoro nuovo.
-
-### Scaricare il progetto sul PC (B, e C quando non esiste una copia)
-
-1. Se l'utente non ha già indicato la cartella, chiedigliela. Mai cartelle di sistema, e mai una cartella che contiene già altro.
-2. Se nel cloud ci sono modifiche non ancora sul remoto, falle inviare prima (push), altrimenti il PC parte da una versione vecchia.
-3. Verifica `git --version`; se manca, guida l'utente a installare Git per il suo sistema.
-4. `git clone <url del repository> <cartella>`. Per un repository privato, la prima volta può aprirsi il browser per l'accesso: avvisa l'utente.
-5. Installa le dipendenze come indicato nel README (es. `npm install`, verificando prima `node --version`).
-6. Fai i controlli della copia locale (sopra) e registra la cartella nel piano come "Copia sul PC".
-
-### Modalità ibrida (C): il repository remoto è il canale, non i messaggi
-
-Verificato sul campo: una sessione cloud può **avviare** una sessione sul PC e darle istruzioni solo all'avvio. Dopo non può più scriverle, e quella sessione può non comparire nella lista di Code dell'utente. Quindi:
-
-- **Non chiedere mai all'utente di fare da tramite** (incollare compiti, rispondere a permessi, cercare la sessione sul PC o il suo terminale). L'unica azione dell'utente è approvare l'avvio della sessione sul PC.
-- **Tutta la comunicazione passa dal repository remoto**: il piano (con i task Codex e i loro prompt completi) e i branch `codex/*`.
-- **Flusso:**
-  1. La sessione cloud scrive nel piano tutti i task `Esecutore: Codex` pronti, con prompt completo e branch di base, e fa push del piano (vedi "Dove sta il piano").
-  2. Verifica che il plugin Coduet sia installato anche sul PC (altrimenti chiedi all'utente di installarlo). Avvia **una sola** sessione sul PC, nella "Copia sul PC", con questo prompt di avvio (autosufficiente):
-     "Usa la skill coduet:start nel ruolo Esecutore sul PC, con la configurazione del progetto se c'è. Repository <url>, copia locale <percorso>. Il piano è <percorso del piano> sul branch <branch del piano>. Esegui tutti i task con Esecutore: Codex e stato aperto, poi fermati. Comandi di verifica del progetto: <comandi>."
-  3. La sessione cloud continua il suo lavoro e ogni tanto fa `git fetch` per vedere i branch `codex/*` e lo stato nel piano; quando un task risulta pronto, lo rivede e lo unisce (Passo 6).
-  4. Se servono altri task Codex, li aggiunge al piano e avvia una nuova sessione sul PC con lo stesso prompt.
-- Se invece la sessione cloud ha strumenti per eseguire comandi direttamente sul PC (con tempo massimo breve), avvia Codex staccato (es. `Start-Process` in PowerShell o `nohup` in bash, output su file) e controlla periodicamente i file di esito.
-- Prima di avviare la sessione sul PC, la sessione cloud invia sul remoto il proprio lavoro salvato.
-- Assegna a Codex file diversi da quelli su cui sta lavorando Claude.
-- La ripresa automatica (Passo 8) e il registro globale girano sul PC: li gestisce la sessione sul PC.
-
-### Ruolo Esecutore sul PC
-
-Quando una sessione sul PC viene avviata con il ruolo "Esecutore sul PC":
-0. **Pulizia e lavoro lasciato a metà.** Rimuovi i worktree che il piano segna come da rimuovere. Se il piano o il registro globale mostrano operazioni di un Esecutore precedente rimaste aperte (task "in corso" senza esito, worktree o branch `codex/*` senza commit o senza push, righe attive nel registro globale senza un processo Codex in esecuzione), chiudile prima di tutto: completa commit e push se il lavoro è valido, altrimenti riporta il task ad "aperto"; sistema registro e stato, e scrivi nel piano cosa hai trovato e cosa hai fatto.
-1. Fai i controlli della copia locale (sopra) e il Passo 1 (Codex, versione, permessi).
-2. Leggi il piano dal branch indicato. Per ogni task `Esecutore: Codex` aperto, in ordine e rispettando il registro globale, segui i Passi 5 e 5-bis (controlli tecnici compresi) partendo dal branch di base del task.
-3. Quando Codex finisce, lancia tu i comandi di verifica del progetto, correggi i piccoli errori, fai il commit sul branch `codex/<task>` (nel messaggio di commit riporta il riepilogo di Codex e i token usati, perché i file di lavoro non vengono inviati) e il push. Non unire nulla: l'unione la fa la sessione che ha scritto il piano, dopo la revisione.
-4. Aggiorna lo stato del task nel piano (pronto per revisione, bloccato e perché, in attesa di quota) e fai push del piano.
-5. Se un task richiede una decisione dell'utente, segnalo nel piano come bloccato e passa al successivo; alla fine riepiloga.
-6. Quando i task sono finiti, scrivi nel piano le proposte del Passo 9 (se ce ne sono) e fermati.
-
-## Modalità: progetto nuovo o già avviato
-
-- **Progetto nuovo** (cartella vuota o quasi, nessun piano): segui tutti i passi.
-- **Progetto già avviato** (c'è codice e/o un piano, ad esempio in `docs/` o `docs/superpowers/plans/`): salta il Passo 2. Leggi il piano più recente, il `CLAUDE.md` e lo stato del repository (`git status`, `git log -10 --oneline`). Al Passo 3 non riscrivere il piano: aggiungi la sezione "Stato e passaggio di consegne" se manca e l'etichetta `Esecutore` solo ai task non ancora completati. Se non esiste un piano, chiedi all'utente su cosa vuole lavorare e scrivilo con la skill della riga "Piano".
-
-## Passo 0: chiedere se dividere il lavoro
-
-Chiedi con AskUserQuestion (una sola domanda):
-"Vuoi dividere il lavoro con Codex?"
-- Sì, divisione completa
-- Solo asset, test e documentazione
-- No, faccio tutto io
-
-Non chiedere se Codex non è raggiungibile (situazione D, oppure Codex mancante o non collegato al Passo 1): dillo in una riga e prosegui senza. Se il parametro "Domanda iniziale sulla divisione con Codex" è impostato su un valore fisso, non chiedere e applicalo, dicendolo in una riga. Se la risposta è "No", segui le fasi senza la parte Codex. Se il lavoro previsto ha meno task della soglia "lavoro piccolo", proponi "No" spiegandolo in una riga, ma lascia decidere all'utente.
-
-## Passo 1: controllo di Codex
-
-Esegui `codex --version` e `codex login status` sul PC (nella modalità ibrida lo fa l'Esecutore sul PC; la sessione cloud ne legge l'esito nel piano).
-- Se manca o non risulta collegato, dillo all'utente e prosegui senza Codex.
-- **Controllo della versione.** Questa skill è stata verificata con Codex CLI **0.163.0**. Se la versione installata è diversa, esegui `codex exec --help` e `codex exec resume --help` e controlla che esistano ancora le opzioni usate qui: `--sandbox workspace-write`, `--cd`, `-o`, `-c`, il sottocomando `resume` con ID sessione e prompt. Se qualcosa manca o è cambiato, avvisa l'utente, adatta i comandi per questa sessione e annota la differenza come proposta del Passo 9.
-- Vale lo stesso per Claude Code: se uno strumento che questa skill usa (attività programmate, notifiche, esecuzione in background) non esiste più o ha cambiato nome, usa l'equivalente disponibile oppure chiedi all'utente come procedere, e annotalo come proposta del Passo 9.
-- **Permessi di Claude Code**: se Claude Code chiede ogni volta il permesso per lanciare Codex, proponi all'utente di autorizzare una sola volta i comandi `codex exec` e `codex exec resume` (regola di permesso nelle impostazioni del progetto). Non autorizzare altro senza chiedere.
-- La quota Codex è limitata e non si vede da qui: prima di assegnare molto lavoro a Codex chiedi all'utente quanta gliene resta (`/status` dentro Codex, oppure chatgpt.com/settings/usage), e controlla lo stato quota nel registro globale.
-
-## Passo 2: ideazione (solo progetto nuovo)
-
-Carica la skill della riga "Ideazione" e seguila normalmente.
-
-## Passo 3: piano con esecutore
-
-Carica la skill della riga "Piano" e seguila, con queste aggiunte obbligatorie.
-
-1. In cima al piano aggiungi:
-
+1. At the top of the plan:
 ```
-## Stato e passaggio di consegne
-- Ultimo aggiornamento: <data e ora>
-- Copia sul PC: <percorso della copia locale da usare, oppure "nessuna">
-- In corso: <task>
-- Prossimo passo: <cosa fare, abbastanza preciso da poter ripartire senza contesto>
-- Codex in esecuzione: <task, cartella worktree e ID sessione, oppure "nessuno">
-- Codex in attesa di quota: <task, ID sessione, ora di ripresa, ora del controllo di Claude, comando manuale, oppure "nessuno">
-- Asset in attesa di approvazione: <elenco, oppure "nessuno">
+## Status and handoff
+- Last update: <date time>
+- PC copy: <path or "none">
+- In progress: <task>
+- Next step: <precise enough to restart without context>
+- Codex running: <task, worktree, session id, or "none">
+- Codex waiting for quota: <task, session id, resume time, check time, or "none">
+- Assets awaiting approval: <list or "none">
 ```
+2. Each task gets `**Executor:** Claude` or `**Executor:** Codex`.
+   - **Claude**: architecture, delicate domain logic, security (auth, permissions, secrets, data access), DB migrations, hard debugging, integration, final review, anything needing secrets or local config.
+   - **Codex**: repetitive or mechanical work following existing patterns, tests, docs, copy and translations, mechanical refactors, assets, presentations.
+   - Apply the delegation rule (`reference/profiles.md` if not the default). "Only assets, tests and docs" → only those. When in doubt, Claude.
+3. Each Codex task has a **base branch** (the feature/PR branch it merges into, not necessarily `main`), a **status** (open, queued, running, ready for review, blocked, merged) and a self-contained **prompt** (Codex doesn't see this chat): goal and exact files; files to use as models; project constraints; quick verification commands that end on their own; and always: "Do not commit. Do not modify files other than those listed. Do not read, print or modify secret or local config files (.env and similar). At the end write a summary of what you did and what you could not do."
+4. Before handing a prompt to Codex (and again before launch if time passed), compare it with decisions already made (plan, specs, `CLAUDE.md`, `AGENTS.md`, what the user said). Update it, or ask if unclear.
+5. Send the "Plan split" message and wait for confirmation.
 
-2. Ogni task riceve una riga `**Esecutore:** Claude` oppure `**Esecutore:** Codex`.
-
-Criteri di assegnazione:
-- **Claude**: architettura, logica di dominio delicata, sicurezza (autenticazione, permessi, segreti, controllo degli accessi ai dati), migrazioni del database, debug difficili, integrazione, revisione finale e tutto ciò che richiede segreti o configurazioni locali.
-- **Codex**: lavoro ripetitivo o meccanico che segue schemi già presenti nel codice, test, documentazione, testi e traduzioni, refactoring meccanici, asset (immagini, audio, video, 3D) e presentazioni.
-- Applica il parametro "Criterio di delega a Codex" (vedi "Profili per piano").
-- Con la risposta "Solo asset, test e documentazione" assegna a Codex soltanto quelle tre categorie.
-- In caso di dubbio, il task va a Claude.
-
-3. Ogni task di Codex indica il **branch di base** (il branch della funzione o PR su cui il lavoro dovrà essere unito, non per forza `main`) e uno **stato** (aperto, in coda, in corso, pronto per revisione, bloccato, unito). Contiene poi un **prompt per Codex** completo e autosufficiente, perché Codex non vede questa conversazione:
-- obiettivo e file da creare o modificare (percorsi esatti);
-- file esistenti da prendere come modello;
-- vincoli del progetto;
-- comandi per verificare il lavoro, presi dal progetto (`CLAUDE.md`, README, script): solo comandi rapidi che terminano da soli; escludi suite lente o che non finiscono (vedi "Progetti senza test" se non ce ne sono);
-- "Non fare commit. Non modificare file fuori da quelli indicati. Non leggere, stampare o modificare file di segreti o configurazioni locali. Alla fine scrivi un riepilogo di cosa hai fatto e cosa non sei riuscito a fare."
-
-4. **Coerenza con le decisioni prese.** Prima di affidare un prompt a Codex, e di nuovo prima di lanciarlo se è passato del tempo, confrontalo con le decisioni già prese nel progetto: piano, documenti di decisioni o specifiche, `CLAUDE.md`, `AGENTS.md`, valori scelti dall'utente in conversazione. Se il prompt li contraddice o è rimasto indietro, aggiornalo; se non è chiaro quale versione valga, chiedi all'utente.
-5. Mostra all'utente la divisione dei task e chiedi conferma prima di eseguire.
-
-## Passo 4: AGENTS.md
-
-Se il progetto non ha un `AGENTS.md`, crealo con le regole del progetto (le stesse del `CLAUDE.md`, se esiste) più queste:
-- lavora solo sui file indicati nel prompt;
-- non fare commit e non cambiare branch;
-- non leggere, stampare o modificare file di segreti o configurazioni locali;
-- non toccare i task marcati `Esecutore: Claude`;
-- se non riesci a completare il task, fermati e spiega perché invece di improvvisare.
-
-## Passo 5: esecuzione in parallelo
-
-Per ogni task di Codex:
-
-**Codex si usa solo con `codex exec`, mai in modalità interattiva** (verificato sul campo: in modalità interattiva si ferma a chiedere permessi che nessuno può dare). Se un comando è fuori dai suoi permessi, con `exec` fallisce invece di bloccarsi: i test e i comandi che richiedono più permessi li lancia la sessione Claude, non Codex.
-
-1. Crea un worktree separato partendo dal **branch di base** del task (skill della riga "Isolamento", oppure a mano):
-   `git worktree add ../<progetto>-codex-<task> -b codex/<task> <branch di base>`
-2. Salva il prompt del task in `<worktree>/.codex-prompt.md`.
-3. Lancia Codex in background con il tool Bash (`run_in_background: true`), salvando tutto l'output:
-
-```
-codex exec --cd "<worktree>" --sandbox workspace-write -c model_reasoning_effort="<livello>" -o "<worktree>/.codex-esito.md" "<prompt per Codex>" > "<worktree>/.codex-output.txt" 2>&1
-```
-
-   - `--sandbox workspace-write` è obbligatorio: senza, Codex parte in sola lettura e non può scrivere (verificato).
-   - Livello di ragionamento: `low` per compiti banali, il valore del parametro "Ragionamento Codex predefinito" di norma, `high` per compiti lunghi o complessi. Senza `-c model_reasoning_effort`, `exec` parte con ragionamento "none".
-   - Aggiungi `--skip-git-repo-check` solo se la cartella non è un repository git.
-   - Annota nel piano l'ID della sessione (riga `session id:` all'inizio di `.codex-output.txt`).
-4. Al massimo il numero indicato dal parametro "Task Codex contemporanei" (di partenza 2), **in totale su tutti i progetti** dell'utente, perché la quota Codex è una sola: controlla e aggiorna il registro globale (vedi "Registro globale di Codex").
-5. Mentre Codex lavora, esegui i task di Claude con la skill della riga "Esecuzione". Non restare in attesa.
-6. Aggiorna la sezione "Stato e passaggio di consegne" a ogni traguardo, non solo alla fine.
-
-### Far vedere che Codex sta lavorando
-
-L'utente non vede Codex: senza segnali sembra che tutto sia fermo. Quindi:
-1. **All'avvio di ogni task Codex**, scrivi un messaggio breve: quale task, ora di avvio, cosa aspettarsi, e che l'utente può continuare a scriverti. Esempio: "Codex sta lavorando su: test della pagina Online (avviato alle 17:12). Ti aggiorno quando finisce; intanto puoi scrivermi."
-2. **Lista delle attività**: se la sessione ha uno strumento per la lista delle attività, crea una voce per ogni task Codex ("Codex: <task>") in corso, e segnala completata, bloccata o in attesa di quota quando cambia stato.
-3. **Aggiornamenti nei task lunghi**: se un task dura più di qualche minuto e non stai facendo altro di visibile, controlla ogni 3-5 minuti le ultime righe di `.codex-output.txt` e, solo se c'è un passo nuovo, scrivi una riga su cosa sta facendo Codex (per esempio "sta eseguendo i test", "sta modificando 3 file"). Usa gli strumenti di attesa o di monitoraggio della sessione, se ci sono, invece di aspettare in silenzio. Niente aggiornamenti ripetitivi.
-4. **Se sei in attesa** di Codex e non hai altro da fare, dillo esplicitamente: "Sto aspettando Codex (<task>, da N minuti)."
-5. **Alla fine di ogni task**, una riga di riepilogo: esito, file modificati (`git diff --stat` nel worktree), token usati, e il passo successivo (di solito la revisione).
-6. **Su richiesta** ("come va Codex?" o simili), mostra lo stato di tutti i task Codex attivi: dal registro globale, dallo stato nel piano e dalle ultime righe dei rispettivi output.
-7. **Nella modalità ibrida**, l'Esecutore sul PC scrive lo stato nel piano; la sessione cloud lo legge con `git fetch` e riporta gli stessi aggiornamenti all'utente.
+## Step 4: AGENTS.md
 
-### Registro globale di Codex (più progetti insieme)
+If missing, create it with the project rules (as in `CLAUDE.md`) plus: work only on the files in the prompt; no commits, no branch changes; never touch secret or local config files; don't touch `Executor: Claude` tasks; if you can't finish, stop and explain. With several branches, propose it as a small PR to `main`; until merged, put its rules at the top of each Codex prompt.
 
-La quota Codex è unica per tutti i progetti dell'utente. Sul PC tieni un registro condiviso in `~/.coduet/registro.md` (cartella utente; crealo se manca):
-- **Task attivi**: progetto, task, worktree, ora di avvio. Aggiungi la riga quando lanci Codex e toglila quando finisce.
-- **Stato quota**: se un task si ferma per limite di utilizzo, scrivi "Quota esaurita fino a <ora del reset>".
-- **Prima di lanciare un task** in qualsiasi progetto: se è già raggiunto il numero di task attivi del parametro "Task Codex contemporanei", metti il task in coda nel piano; se la quota risulta esaurita, non lanciarlo e pianificalo per dopo il reset (Passo 8).
-- **Alla ripresa** dopo un reset, se più progetti hanno task in attesa, riavviali a scaglioni (rispettando il parametro "Task Codex contemporanei"), nell'ordine in cui si erano fermati.
-- Righe più vecchie di 24 ore senza un processo Codex attivo sono residui: verificale e toglile.
-- Il registro sta sul PC: nella modalità ibrida lo legge e aggiorna la sessione sul PC.
+## Step 5: parallel execution
 
-## Passo 5-bis: asset e ciclo di approvazione
+**Codex runs only through `codex exec` (the scripts), never interactively**: interactive mode stops on permission prompts nobody can answer.
 
-Vale per qualsiasi asset generato da Codex: immagini, sprite, icone, audio, video, modelli 3D, presentazioni. La produzione è automatica, l'approvazione è sempre dell'utente: nessun asset entra nel progetto senza il suo ok.
+For each Codex task:
+1. Write the prompt to a file (e.g. scratch folder).
+2. Launch with the Bash tool and `run_in_background: true`:
+   - Windows: `codex-run.ps1 -Project "<folder>" -Task <name> -PromptFile "<file>" -Base <base branch> -Effort <level> -Max <concurrent>`
+   - macOS/Linux: `codex-run.sh "<folder>" <name> "<file>" --base <base branch> --effort <level> --max <concurrent>`
 
-### Cosa sa produrre Codex
+   The script creates the worktree `../<project>-codex-<task>` on branch `codex/<task>`, excludes work files from git, records the task in `~/.coduet/tasks/` (the shared registry across projects), runs Codex in workspace-write and ends with one line `CODEX FINISHED task=… status=done|limit|error files=… tokens=… session=… worktree=…`. `CODEX QUEUED` means the concurrent limit is reached: mark the task queued and launch it when one finishes. Effort: `low` trivial, the parameter normally, `high` long or complex.
+3. Send "Codex starts", add the task-list item, write session and worktree in the plan.
+4. Meanwhile do Claude's tasks with the execution skill. Don't wait idle.
+5. **Progress**: if a task runs long and you're not doing anything visible, run `codex-status` every 3-5 minutes (use the session's wait/monitor tool if available) and send "Progress" only when something new appears. When the user asks "how is Codex doing?", run `codex-status` and report all tasks.
+6. When the background run finishes you are notified: read its last line and send "Codex done" (or go to Step 8 for `status=limit`).
 
-| Tipo | Come | Note |
-|---|---|---|
-| Immagini, sprite | Strumento integrato di generazione immagini (account ChatGPT a pagamento; con il parametro "Generazione di immagini con Codex" = no non usarlo) | Da verificare alla prima prova. Sfondo trasparente poco affidabile: chiedi uno sfondo a tinta unita (#00FF00 di default, oppure il colore previsto dal progetto) e scontorna con uno script |
-| Vettoriale, icone, interfacce | Codice SVG/HTML | Affidabile |
-| Audio | Codice: sintesi sonora (es. Python che scrive WAV), MIDI | Buono per effetti retro e musica semplice; non adatto ad audio realistico |
-| Video, animazioni | Fotogrammi generati via codice + ffmpeg (se installato) | Animazioni grafiche sì, video realistici no |
-| Modelli 3D | Codice che scrive glTF, o script Blender (se installato) | Forme semplici e low-poly sì, modelli organici complessi no |
-| Presentazioni, documenti | Codice (HTML, PPTX) | Affidabile |
+Assets (images, audio, video, 3D, presentations): follow `reference/assets.md`.
 
-Se un asset richiesto rientra nei casi "no", dillo all'utente prima di iniziare e proponi un'alternativa (stile più semplice, strumento esterno, asset di libreria).
+## Step 6: review and merge
 
-### Prima di produrre
+1. Read `.codex-esito.md`, the end of `.codex-output.txt` and the worktree diff. With `status=limit` → Step 8; with assets → the approval loop first.
+2. Bring `codex/<task>` up to date with its base branch; you resolve conflicts (Codex never does), asking the user when they touch project choices.
+3. Run the verification commands. No tests? Use build/typecheck/lint, then run the app and look at the touched parts, then a more careful review.
+4. Review with the Review skill; check the diff has no secrets and no `.codex-*` files.
+5. Good → commit on `codex/<task>` and merge **into its base branch**. Not good → fix it, or relaunch Codex with sharper instructions (up to the retries parameter, then Claude takes it).
+6. `git worktree remove ../<project>-codex-<task>`; one line in `docs/codex-registro.md` (date, task, outcome, tokens); send "Review".
 
-- **Se il progetto ha già convenzioni per gli asset** (guide, prompt, strumenti di importazione, colore di sfondo per lo scontorno, cartelle), usa quelle al posto delle indicazioni di questa skill. Cercale in `docs/`, nel README e negli script del progetto prima di creare qualsiasi cosa.
-- Se manca, crea con l'utente `docs/stile-asset.md`: stile, palette, dimensioni, formati, durata e volume per l'audio, poligoni e scala per il 3D, più i riferimenti approvati.
-- Parti con gli **asset di prova** indicati dal parametro (di partenza 2-3) per tipo e passa alla produzione completa solo quando l'utente approva lo stile.
-- Le bozze vanno in `assets/_bozze/<asset>/v<n>.<ext>`; solo gli asset approvati vengono copiati nella cartella definitiva. Le bozze non devono arrivare nel branch di base: prima dell'unione toglile dal branch `codex/<task>` (nella modalità ibrida possono viaggiare su quel branch solo per farle vedere all'utente).
-- Gli asset consumano molta quota Codex (le immagini in particolare): producili a gruppi.
+Before saying the work is finished, use the Final check skill.
 
-### Ciclo per ogni gruppo di asset
+## Step 7: Claude's quota and handoff
 
-1. **Produzione**: prompt a Codex con riferimento alla guida di stile. Come riferimento visivo allega immagini con `-i <file>`; per gli altri tipi indica nel prompt il percorso dei file di riferimento.
-2. **Controllo tecnico automatico** (prima che l'utente veda nulla), per tipo:
-   - immagini/sprite: dimensioni, formato, sfondo scontornabile, numero e allineamento dei frame, coerenza tra frame (guardali);
-   - audio: si apre, formato e frequenza di campionamento, durata, picchi e clipping, silenzi iniziali e finali, loop senza scatti;
-   - video: si apre, durata, risoluzione, fps, codec;
-   - 3D: file valido, numero di poligoni, scala e orientamento, texture presenti, render di anteprima;
-   - presentazioni e documenti: si aprono, impaginazione (guardali), testi.
-   Se un controllo fallisce, rigenera da solo con il prompt corretto, al massimo quante volte indica il parametro "Rigenerazioni automatiche"; poi segnala il problema all'utente.
-3. **Pagina di anteprima**: crea `assets/_bozze/anteprima.html` con il visualizzatore adatto a ogni tipo (immagine o GIF animata, `<audio>`, `<video>`, `<model-viewer>` per il 3D). Per ogni asset: nome, versione, pulsanti "Approvato" / "Da rigenerare", campo nota, e in fondo un pulsante "Copia esito" che produce un testo come `run_v2: ok | jump_v1: rigenera - il braccio sparisce nel frame 3`. Chiedi all'utente di aprirla e incollarti l'esito.
-4. **Rigenerazione mirata**: traduci le note dell'utente in istruzioni precise. Rigenera solo ciò che serve (un frame, un'animazione, un suono), passa la versione precedente come riferimento e aggiungi la correzione al prompt cumulativo dell'asset, così l'errore non ricompare. Le rigenerazioni chieste dall'utente non hanno un limite, ma vanno contate.
-5. **Approvazione**: copia la versione approvata nella cartella definitiva e, se è un buon riferimento di stile, aggiungila a `docs/stile-asset.md`.
-
-### Registro e lavoro in autonomia
-
-- `docs/asset-registro.md`: per ogni asset, ogni versione con prompt, esito del controllo tecnico, nota dell'utente, stato (bozza / approvato / scartato) e numero di rigenerazioni. Si può sempre tornare a una versione precedente.
-- In autonomia (utente assente) produzione e controlli tecnici procedono, ma gli asset restano "in attesa di approvazione": il resto del progetto va avanti con segnaposto, e al ritorno l'utente trova la pagina di anteprima pronta.
-
-## Passo 6: revisione e integrazione
-
-Quando un task di Codex termina:
-1. Leggi `.codex-esito.md`, `.codex-output.txt` e il diff del worktree. Aggiorna il registro globale (task non più attivo). Nella modalità ibrida questi file restano sul PC (sono esclusi dai commit): la sessione che rivede legge il riepilogo e i token che l'Esecutore ha scritto nel piano e nel messaggio di commit, più il diff del branch `codex/<task>`.
-2. Se l'output contiene un errore di limite di utilizzo, vai al Passo 8. Se il task produceva asset, applica prima il ciclo del Passo 5-bis.
-3. **Allinea il branch di Codex** con lo stato attuale del suo branch di base (`git fetch` e merge o rebase del branch di base su `codex/<task>`). Se ci sono conflitti, risolvili tu: Codex non risolve mai conflitti. Se il conflitto tocca scelte di progetto, chiedi all'utente.
-4. Esegui i comandi di verifica del task.
-5. Fai la revisione con la skill della riga "Revisione". Controlla anche che nessun file di segreti o di lavoro della skill sia nel diff.
-6. Se va bene, fai il commit sul branch `codex/<task>` (se non l'ha già fatto l'Esecutore sul PC) e uniscilo **nel suo branch di base** (non in `main`, se la base è un'altra PR). Se non va bene, correggi tu oppure rilancia Codex con istruzioni più precise (al massimo quanti tentativi indica il parametro "Nuovi tentativi di Codex", poi il task passa a Claude).
-7. Rimuovi il worktree: `git worktree remove ../<progetto>-codex-<task>`. Nella modalità ibrida il worktree sta sul PC: segna nel piano che va rimosso e lo rimuove l'Esecutore alla sessione successiva.
-8. Aggiungi una riga a `docs/codex-registro.md`: data, task, esito, token usati (li stampa Codex alla fine).
-
-Prima di dichiarare finito il lavoro usa la skill della riga "Verifica finale".
-
-### Progetti senza test
-
-Se il progetto non ha test, verifica con quello che c'è, in quest'ordine:
-1. build, compilazione, typecheck, lint, se esistono;
-2. prova pratica: avvia l'applicazione e controlla che parta senza errori; per interfacce web apri la pagina e guardala (screenshot) nei punti toccati dal task;
-3. revisione del codice più attenta, e task di Codex più piccoli, così il diff resta leggibile.
-Quando ha senso, proponi all'utente di aggiungere qualche test come parte del task. Solo con il suo ok.
-
-## Passo 7: quota di Claude e passaggio di consegne
-
-Nessuna delle due quote produce addebiti automatici con questa configurazione: quando finisce, il lavoro si ferma.
-
-**Quota di Claude in esaurimento.** Non puoi vederla da solo: è l'utente a dirtelo ("chiudi e passa a Codex"), oppure lo vedi dagli avvisi di limite. Allora:
-1. Fermati a un punto stabile e aggiorna "Stato e passaggio di consegne" con istruzioni dettagliate.
-2. Decidi quali task aperti possono passare a Codex: solo quelli che rispettano i criteri di assegnazione a Codex. Cambia il loro esecutore in `Codex`, scrivi per ciascuno il prompt completo e il branch di base, e fai push del piano. I task delicati restano a Claude e aspettano.
-3. Prepara i worktree per quei task (Passo 5) e scrivi per l'utente i comandi pronti da lanciare nel terminale, uno per task, nella forma del Passo 5 (oppure, nella modalità ibrida, avvia l'Esecutore sul PC).
-4. Avvisa che il lavoro di Codex andrà rivisto da Claude alla ripresa.
-
-**Ripresa dopo un'interruzione.** Fai il controllo delle riprese in sospeso, leggi "Stato e passaggio di consegne", controlla `git worktree list` e i branch `codex/*`, rivedi il lavoro fatto in tua assenza e solo poi continua.
-
-## Passo 8: quota di Codex esaurita e ripresa automatica
-
-Questo passo vale per l'accesso a Codex con account ChatGPT. Con una **chiave API** non ci sono quote che si azzerano: non pianificare riprese; segui invece il tetto di spesa (vedi "Profili per piano").
-
-Codex non riparte da solo quando la quota si azzera; il lavoro parziale resta nel worktree. Il sistema ha tre livelli:
-1. **Ripresa** con il pianificatore del sistema operativo: gratuita, parte anche se Claude ha finito la quota.
-2. **Controllo di Claude** (parametro, di partenza 20 minuti dopo): legge l'esito, avvisa l'utente, rilancia se può.
-3. **Avviso di riserva** (parametro, di partenza 40 minuti dopo la ripresa): compare solo se Claude non è intervenuto e la ripresa non è riuscita.
-
-L'utente va coinvolto solo quando Claude non può risolvere da solo. Aggiorna sempre anche lo stato quota nel registro globale.
-
-### 8.1 Decidere
-
-Se l'utente è presente, chiedigli se riassegnare a Claude i task Codex non completati o metterli in ripresa automatica. Se non è presente, scegli la ripresa automatica e scrivilo nel piano.
-
-### 8.2 Orari
-
-Ricava l'ora del reset dal messaggio d'errore in `.codex-output.txt`. Se non c'è, chiedila all'utente (`/status` in Codex). Se l'utente non è presente, usa la stima del parametro "Stima del reset quota" e scrivilo nel piano.
-- Ripresa = reset + parametro "Margine della ripresa" (con più progetti in attesa, a scaglioni: vedi registro globale).
-- Controllo di Claude = ripresa + il tempo indicato dal parametro (se il controllo è disattivato, salta il livello 2).
-- Avviso di riserva = ripresa + parametro "Avviso di riserva".
-
-### 8.3 Comando di ripresa (verificato)
-
-Da dentro la cartella del worktree (la ripresa cerca le sessioni nella cartella corrente):
-
-```
-codex exec resume <SESSION_ID> -c sandbox_mode="workspace-write" -c model_reasoning_effort="<livello>" -o .codex-esito.md "Continua il task da dove ti eri fermato. Non fare commit. Alla fine scrivi un riepilogo."
-```
-
-- `<livello>` è lo stesso usato per il task (di norma il parametro "Ragionamento Codex predefinito"); negli script qui sotto sostituisci `medium` con quel valore.
-- `codex exec resume` non ha `--sandbox` né `--cd`: la sandbox si imposta con `-c sandbox_mode="workspace-write"` (verificato), la cartella lanciando il comando da dentro il worktree.
-- Mantiene il contesto della sessione precedente (verificato).
-- Usa sempre l'ID della sessione, non `--last`, perché nel worktree potrebbero esserci più sessioni.
-- Se la ripresa fallisce perché la sessione non si trova, ripiega su un nuovo `codex exec --sandbox workspace-write` nello stesso worktree, con il prompt in `.codex-prompt.md` e l'istruzione di continuare dal lavoro già presente.
-
-### 8.4 Script e attività di Windows
-
-Crea `<worktree>/riprendi-codex.ps1` (sostituisci i segnaposto):
-
-```powershell
-$wt = '<worktree in formato Windows>'
-$task = '<nome task>'
-$sessione = '<SESSION_ID>'
-$log = Join-Path $wt '.codex-ripresa.log'
-$out = Join-Path $wt '.codex-output-ripresa.txt'
-$prompt = 'Continua il task da dove ti eri fermato. Non fare commit. Alla fine scrivi un riepilogo.'
-Set-Location $wt
-"$(Get-Date -Format s) AVVIO ripresa" | Add-Content $log
-try {
-  codex exec resume $sessione -c sandbox_mode="workspace-write" -c model_reasoning_effort="medium" -o .codex-esito.md $prompt *> $out
-  $codice = $LASTEXITCODE
-} catch { $codice = 1; $_ | Out-String | Add-Content $out }
-$testo = Get-Content $out -Raw -ErrorAction SilentlyContinue
-if ($testo -match '(?i)usage limit|rate limit|limit reached') { "$(Get-Date -Format s) LIMITE ancora raggiunto" | Add-Content $log }
-elseif ($codice -ne 0) { "$(Get-Date -Format s) ERRORE codice $codice" | Add-Content $log }
-else { "$(Get-Date -Format s) COMPLETATO" | Add-Content $log }
-Unregister-ScheduledTask -TaskName "Codex-ripresa-$task" -Confirm:$false -ErrorAction SilentlyContinue
-```
-
-Crea `<worktree>/avviso-riserva.ps1`:
-
-```powershell
-$wt = '<worktree in formato Windows>'
-$task = '<nome task>'
-$sessione = '<SESSION_ID>'
-$log = Join-Path $wt '.codex-ripresa.log'
-$testo = Get-Content $log -Raw -ErrorAction SilentlyContinue
-$manuale = "cd '$wt'; codex exec resume $sessione -c sandbox_mode=`"workspace-write`" -c model_reasoning_effort=`"medium`" -o .codex-esito.md `"Continua il task da dove ti eri fermato. Non fare commit.`""
-if ($testo -notmatch 'CONTROLLO CLAUDE' -and $testo -notmatch 'COMPLETATO') {
-  if (-not $testo) { $motivo = 'la ripresa non e mai partita' }
-  elseif ($testo -match 'LIMITE') { $motivo = 'la quota di Codex e ancora esaurita' }
-  else { $motivo = 'la ripresa ha dato errore (dettagli in .codex-output-ripresa.txt)' }
-  (New-Object -ComObject WScript.Shell).Popup("Codex - $task`n`n$motivo, e Claude non e riuscito a intervenire.`n`nComando per ripartire a mano (PowerShell):`n$manuale", 0, "Codex - $task", 48) | Out-Null
-}
-Unregister-ScheduledTask -TaskName "Codex-riserva-$task" -Confirm:$false -ErrorAction SilentlyContinue
-```
-
-Registra le due attività (dal tool Bash: `powershell -NoProfile -Command "..."`):
-
-```powershell
-$s = New-ScheduledTaskSettingsSet -StartWhenAvailable -WakeToRun
-$a1 = New-ScheduledTaskAction -Execute 'powershell.exe' -Argument '-NoProfile -ExecutionPolicy Bypass -File "<worktree>\riprendi-codex.ps1"'
-Register-ScheduledTask -TaskName 'Codex-ripresa-<task>' -Action $a1 -Trigger (New-ScheduledTaskTrigger -Once -At '<ora ripresa>') -Settings $s
-$a2 = New-ScheduledTaskAction -Execute 'powershell.exe' -Argument '-NoProfile -ExecutionPolicy Bypass -File "<worktree>\avviso-riserva.ps1"'
-Register-ScheduledTask -TaskName 'Codex-riserva-<task>' -Action $a2 -Trigger (New-ScheduledTaskTrigger -Once -At '<ora avviso di riserva>') -Settings $s
-```
-
-- `-StartWhenAvailable`: se il PC era spento, l'attività parte appena viene riacceso.
-- `-WakeToRun`: prova a risvegliare il PC dalla sospensione.
-- Se la registrazione fallisce, avvisa subito l'utente nella conversazione con il comando manuale.
-
-### 8.4-bis Script e pianificazione su macOS e Linux (non ancora provati)
-
-Stessa logica degli script Windows, in bash:
-- `riprendi-codex.sh`: entra nel worktree, scrive `AVVIO` nel log, lancia lo stesso `codex exec resume`, scrive `COMPLETATO`, `ERRORE` o `LIMITE` nel log.
-- `avviso-riserva.sh`: se nel log non c'è `CONTROLLO CLAUDE` né `COMPLETATO`, mostra l'avviso con il motivo e il comando manuale.
-- Pianificazione:
-  - **macOS**: un LaunchAgent (`~/Library/LaunchAgents/<nome>.plist` con `StartCalendarInterval`, caricato con `launchctl load`), rimosso dopo l'esecuzione; in alternativa `at`, se attivo.
-  - **Linux**: `systemd-run --user --on-calendar='<data ora>' <script>`; in alternativa `at` o una riga cron da rimuovere dopo l'esecuzione.
-- Avvisi: **macOS** `osascript -e 'display dialog "<testo>"'`; **Linux** `notify-send "Codex" "<testo>"` (se manca, scrivi l'avviso in un file sul Desktop).
-- Metti sempre i percorsi tra virgolette.
-- Alla prima esecuzione reale verifica che tutto funzioni e annota l'esito come proposta del Passo 9.
-
-### 8.5 Controllo di Claude
-
-Crea un'attività programmata di Claude Code sul computer dell'utente, all'ora del controllo, usando lo strumento di pianificazione disponibile nella sessione. Non usare pianificazioni che valgono solo per la sessione corrente: devono sopravvivere alla chiusura. Se non c'è uno strumento adatto, chiedi all'utente di crearla dall'app desktop con il prompt qui sotto.
-
-Prompt dell'attività (completo e autosufficiente):
-
-"Progetto in <percorso progetto>. Usa la skill coduet:start, Passo 8.6, per il task Codex '<nome task>' nel worktree <worktree> (sessione <SESSION_ID>). Appena inizi scrivi in <worktree>/.codex-ripresa.log la riga '<data ora> CONTROLLO CLAUDE inizio'; alla fine '<data ora> CONTROLLO CLAUDE fine' con una breve descrizione di cosa hai fatto (solo lettura, rilancio, revisione)."
-
-### 8.6 Cosa fa il controllo (anche all'inizio di ogni sessione)
-
-Per ogni task in "Codex in attesa di quota", leggi `.codex-ripresa.log`:
-- **`COMPLETATO`** → fai la revisione (Passo 6), svuota la riga nel piano e avvisa l'utente dell'esito.
-- **`ERRORE`** → leggi `.codex-output-ripresa.txt`. Se è un problema che puoi risolvere (comando, percorso, sessione non trovata), rilancia tu Codex in background (Passo 8.3, con il ripiego se serve), aspetta l'esito e procedi. Se non puoi risolverlo, avvisa l'utente spiegando il problema; non serve che incolli comandi: basta che risponda, per esempio "sì, rilancia".
-- **`LIMITE`** → la quota di Codex non è ancora tornata: ripianifica ripresa, controllo e avviso di riserva per il reset successivo, aggiorna il registro globale e avvisa l'utente.
-- **Nessun `AVVIO`** con l'ora di ripresa già passata → la ripresa non è partita (PC spento o attività mancante). Controlla le attività pianificate (su Windows `Get-ScheduledTask -TaskName 'Codex-*'`), rilancia tu se possibile, poi avvisa l'utente.
-- **Ora di ripresa non ancora arrivata** → ricordalo all'utente in una riga.
-
-Per avvisare l'utente usa lo strumento di notifica disponibile nella sessione (notifica push); se non c'è, scrivi l'esito come messaggio della sessione.
-
-### 8.7 Misura del consumo (prime volte, secondo il parametro)
-
-L'utente vuole sapere quanto costa il controllo di Claude, per decidere se tenerlo o tornare all'avviso con comando manuale. Claude non vede la percentuale della propria quota, quindi:
-- nelle prime volte in cui il controllo di Claude parte (quante ne indica il parametro "Misure del consumo"; 0 = nessuna), dopo averlo fatto comunica all'utente l'orario di inizio e fine e cosa è stato fatto, e chiedigli di confrontare la percentuale della sessione e del limite settimanale (impostazioni dell'app → Utilizzo, oppure `/usage` in Claude Code) prima e dopo quell'orario;
-- annota ogni misura in `docs/codex-registro.md` (sezione "Consumo del controllo di Claude");
-- dopo l'ultima misura riassumi i dati e chiedi all'utente se tenere il controllo o disattivarlo (con `coduet:settings`). Se lo disattiva, il livello 2 non si usa più: l'avviso di riserva diventa l'unico avviso e compare ogni volta che la ripresa non riesce.
-
-## Passo 9: alla fine di ogni utilizzo, migliorare Coduet
-
-Alla fine del lavoro (o quando l'utente chiude la sessione, o al passaggio di consegne):
-1. Elenca in breve le situazioni impreviste, i comandi falliti, gli aggiramenti che hai dovuto fare e le correzioni che l'utente ti ha dato su come lavorare.
-2. Per ognuna proponi una correzione, **scritta in forma generale**: valida per la maggior parte dei progetti, senza nomi, percorsi, numeri di PR o dettagli del progetto in cui è emersa. I dettagli del singolo progetto vanno nel suo `CLAUDE.md` o nella sua documentazione.
-3. Distingui:
-   - **scelte e valori** (skill per fase, verifiche, parametri): si cambiano con `coduet:settings`, per il progetto o nella configurazione personale;
-   - **regole di lavoro**: appartengono al plugin, che non va modificato localmente. Proponi all'utente un testo pronto da inviare come segnalazione (issue) al repository del plugin, indicato nel suo `plugin.json` alla voce `repository`; se l'utente mantiene il plugin, proponigli la modifica direttamente nel repository del plugin, con un nuovo numero di versione.
-4. Se non è il momento, annota le proposte in `docs/codex-registro.md`, sezione "Proposte per migliorare Coduet", e riproponile all'utilizzo successivo.
-5. Fai il controllo aggiornamenti; se c'è una versione più recente che l'utente ha rimandato, ricordaglielo in una riga e proponi di aggiornare prima del prossimo lavoro.
-
-## Da verificare sul campo (quando lo verifichi, annotalo come proposta del Passo 9)
-
-- Testo esatto dell'errore di limite di Codex e se contiene l'ora del reset.
-- Generazione immagini da `codex exec`.
-- Presenza di ffmpeg e Blender sul PC, se servono video o modelli 3D (`ffmpeg -version`, `blender --version`).
-- Strumento disponibile in Claude Code desktop per creare attività programmate e notifiche.
-- Script e pianificazione su macOS e Linux (Passo 8.4-bis).
-
-## Note per Windows
-
-- Codex è installato nativamente su Windows con sandbox "elevated".
-- Non lanciare mai Codex in cartelle di sistema (es. `C:\Windows\System32`).
-- **Percorsi con spazi o apostrofi** (es. `Lavori di Anna`, `Anna's Files`): metti sempre i percorsi tra virgolette; nelle stringhe PowerShell tra apici singoli raddoppia l'apostrofo (`'C:\...\Anna''s Files\...'`). Per cartelle nuove proponi nomi senza spazi né apostrofi.
-- Evita cartelle sincronizzate (OneDrive, Desktop o Documenti se sincronizzati): rallentano e possono bloccare i file.
-- Le sessioni di Codex restano salvate: si possono riprendere a mano con `codex resume <id>` e vedere con `codex agents`.
-
-## Note per macOS e Linux
-
-- Installazione di Codex: `curl -fsSL https://chatgpt.com/codex/install.sh | sh`, poi `codex login`.
-- Non lanciare Codex in cartelle di sistema; metti sempre i percorsi tra virgolette.
-- Ripresa automatica: vedi Passo 8.4-bis.
+Claude can't see its own quota: the user says so, or limit warnings appear. Then: stop at a stable point and update "Status and handoff" in detail; move to Codex only open tasks that meet the Codex criteria (prompt and base branch for each); launch them as in Step 5 (or give the user the ready launch commands if you must stop now); send "Claude quota"; Claude reviews that work when back. When resuming after an interruption: do the start sequence, read the status, check worktrees and `codex/*` branches, review what was done meanwhile, then continue.
+
+## Step 8: Codex quota used up
+
+With an API key there's no reset: no resume; follow the spending cap. With a ChatGPT account, read `reference/resume.md` and follow it. In short: ask the user (if present) whether to give the tasks to Claude or auto-resume; otherwise auto-resume. Schedule resume and backup notice with `schedule-resume`, schedule Claude's check, update the plan, send "Codex quota".
+
+## Step 9: at the end, improve Coduet
+
+List unexpected situations, failed commands, workarounds and the user's corrections. For each, propose a fix written **in general form** (no project names, paths or PR numbers; project specifics go in its `CLAUDE.md`). Values and choices → `coduet:settings`; working rules → a ready-to-send issue for the plugin repository (`repository` in `plugin.json`), or a change in that repository if the user maintains it. If it's not the moment, note them in `docs/codex-registro.md` ("Coduet improvement proposals"). If an update was postponed, remind it in one line. Send "End".
