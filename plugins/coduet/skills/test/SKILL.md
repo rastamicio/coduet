@@ -7,10 +7,15 @@ description: Use only when the user asks to test Coduet ("collauda Coduet", "tes
 
 A guided check that Coduet works on this computer, in about 5 minutes and a few thousand Codex tokens. It never touches the user's projects. Reply in the user's language; prefix messages with `Coduet test ·`. Scripts are in the plugin folder, two levels above this skill (`scripts/windows/*.ps1` or `scripts/unix/*.sh`, see `coduet:start`).
 
+**Rules:**
+- **Never use the current project or any user folder**: everything happens in the sandbox repo of step 3, even if the session is open in a project.
+- **Run all 9 steps in order.** Don't skip the asset or the simulated resume: they are the parts most likely to break. If a step is impossible, mark it ✗ with the reason and go on.
+- End with the summary table of step 9.
+
 Create a task list with the steps below and tick them off. For each step report ✓ or ✗ with the reason in one line; on ✗ continue with the next step when it doesn't depend on it.
 
 1. **Where**: must be a session on the PC. In a cloud session stop and explain how to run it on the PC (open a Code session on the PC, or use a project with a local default folder).
-2. **Tools**: `git --version`, `codex --version`, `codex login status`, and `coduet-update check` (reports `cli=` and versions). Report each.
+2. **Tools**: `git --version`, `codex --version`, `codex login status`, and `coduet-update check` (reports `cli=` and versions). Report each. The `claude` command only needs to exist (for updates); being logged out of it is fine and not a ✗.
 3. **Sandbox repo**: create `coduet-test` in the system temp folder (Windows `$env:TEMP`, else `/tmp`), `git init`, one commit with a `README.md`. If it already exists from a previous test, ask before replacing it.
 4. **Codex task**: prompt file: "Create hello.txt containing the single line: Coduet ok. Do not commit. At the end write a one-line summary." Launch `codex-run` with `--effort low` in the background and send the "Codex starts" message as in `coduet:start`. While it runs, run `codex-status` once and show the output.
 5. **Completion**: when notified, check the line `CODEX FINISHED … status=done`, that `hello.txt` exists in the worktree, and report tokens. Send the "Codex done" message.

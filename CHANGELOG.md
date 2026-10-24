@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.4.1
+
+- Collaudo più rigoroso: lavora sempre in un repository di prova nella cartella temporanea, mai nel progetto aperto, ed esegue tutti i passi (asset e ripresa simulata compresi) fino alla tabella finale.
+- Il comando `claude` non loggato non è un errore: serve solo per gli aggiornamenti.
+- Il vecchio `~/.coduet/registro.md` (prima della 0.4) viene ignorato; il registro è `~/.coduet/tasks/`.
+
 ## 0.4.0
 
 - **Più leggero**: la skill principale è un quarto di prima (circa 16 KB invece di 62 KB). Le parti usate solo in certi casi (asset, ripresa, modalità ibrida, copia locale, aggiornamenti, profili) stanno in file di riferimento caricati solo quando servono. Il testo delle skill è in inglese; Coduet risponde sempre nella lingua dell'utente.
