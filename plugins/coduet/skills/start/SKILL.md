@@ -81,7 +81,7 @@ Defaults equal Claude Pro + ChatGPT Plus. Other plans: `reference/profiles.md`. 
 2. **First use**: if `coduet-config` doesn't exist, offer in one line the initial setup (`coduet:settings`, about 2 minutes: plans, phase skills, `claude` command, local folder). If declined, go on with defaults.
 3. **Where you are** (table below) and the Start message.
 4. **Updates** (PC sessions only): run `coduet-update check`. If `update=yes`, follow `reference/updates.md`. If `cli=missing`, also see there. If the check fails, say nothing.
-5. **Pending work**: if the plan's "Codex waiting for quota" isn't "none", or `codex-status` shows tasks, apply `reference/resume.md` § Check first. Remind pending asset approvals (`assets/_bozze/anteprima.html`) and undiscussed improvement proposals in `docs/codex-registro.md`.
+5. **Pending work** (`~/.coduet/registro.md` from versions before 0.4 is no longer used; ignore it): if the plan's "Codex waiting for quota" isn't "none", or `codex-status` shows tasks, apply `reference/resume.md` § Check first. Remind pending asset approvals (`assets/_bozze/anteprima.html`) and undiscussed improvement proposals in `docs/codex-registro.md`.
 6. **Plans not set**: if Claude plan or Codex access are "not set" and `~/.coduet/preferenze.txt` doesn't say `plans: don't ask`, offer once, at a stable moment: "Set now" / "Leave it" / "Don't ask again" (writes that line). Not in cloud sessions.
 
 ### Where you are: which sessions can run Codex
