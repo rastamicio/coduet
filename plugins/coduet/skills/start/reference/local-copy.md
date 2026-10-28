@@ -17,6 +17,7 @@ Run `check-copy "<folder>"` and act on its lines:
 | `deps=missing` | Install as the README says |
 | `secret_file=X:missing` | Tell the user which file to create from which example; wait for them |
 | `work_files_excluded=no` | `codex-run` adds the excludes on first launch |
+| `worktree_exclusion=missing:<files>` | Worktree folder `inside` only: see the parameter note in `SKILL.md` |
 
 Then run the project's verification commands. If they already fail, say so: it's not the new work's fault.
 
@@ -42,7 +43,7 @@ Working in a PC session is simpler than hybrid. Once per project, propose: set a
 
 - Git with remote: normal case.
 - Git without remote: only A and B work, no hybrid; suggest adding a remote to work from the cloud too.
-- No git: propose `git init` and a first commit (only with ok), explaining it isolates Codex's work and allows going back. If refused: back up the folder, give each Codex task a copy `../<project>-codex-<task>` (run Codex there with `--skip-git-repo-check`), compare folders at the end and bring over approved changes yourself. No hybrid, no worktrees.
+- No git: propose `git init` and a first commit (only with ok), explaining it isolates Codex's work and allows going back. If refused: back up the folder, give each Codex task a copy at the Worktree folder path (`../<project>-codex-<task>`, or `<project>/.codex-worktrees/<task>` with `inside`: then don't copy `.codex-worktrees` itself nor dependency folders, which are found from the parent), run Codex there with `--skip-git-repo-check`, compare folders at the end leaving out `.codex-*` and bring over approved changes yourself. No hybrid, no worktrees.
 
 ## Secrets and local config
 

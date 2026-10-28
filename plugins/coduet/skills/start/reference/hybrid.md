@@ -22,6 +22,7 @@ Verified: a cloud session can **start** a PC session and instruct it only at lau
 - If the cloud session can run commands on the PC directly (short timeouts), run `codex-run` detached and poll `codex-status` instead.
 - Give Codex files different from those Claude is editing.
 - Resume and the shared registry run on the PC: the PC session handles them.
+- **PC session ended or offline** (often Claude's usage limit on the PC): Codex tasks it already launched keep running. Say plainly that the PC session stopped, when, and whether its Codex tasks had started (plan status, `codex/*` branches). Don't promise to notify without a way to do it: schedule a check with the session's scheduling tool after the likely reset, which starts a new PC session if tasks are still open; no tool → tell the user when to say "riprendi". Doing a Codex task yourself instead is fine only if the user agrees; then mark it in the plan so it isn't run twice.
 
 ## If several PRs are merged into one
 
@@ -32,7 +33,7 @@ Ask first; record in the plan which PRs merge into which branch and why; close t
 When started as "PC Executor":
 0. **Cleanup**: remove worktrees the plan marks for removal. Close leftovers of a previous Executor (task "running" with no outcome, worktree or `codex/*` branch without commit/push, `codex-status` entries with no live process): commit and push valid work, otherwise set the task back to "open"; write in the plan what you found and did.
 1. Copy check (`reference/local-copy.md`) and Step 1.
-2. Read the plan from its branch. For each open Codex task, in order, run Step 5 (and assets loop) from the task's base branch.
+2. Read the plan from its branch. **Launch every open Codex task first** (Step 5, up to the concurrent limit, from each task's base branch; mark them "running" in the plan and push), then do the rest: if this session stops early, Codex keeps going.
 3. When Codex finishes: run the verification commands, fix small errors, commit on `codex/<task>` (put Codex's summary and tokens in the commit message, since work files aren't pushed) and push. Don't merge: the plan's author does, after review.
 4. Update the task status in the plan (ready for review, blocked and why, waiting for quota) and push.
 5. A task needing a user decision: mark it blocked, go to the next; summarise at the end.

@@ -65,7 +65,7 @@ Offer checks Coduet doesn't do by itself, with examples fitting the project (acc
 
 ## Step 5: parameters
 
-Show the parameter table with a one-line explanation each and ask which to change. Check values make sense and explain risky ones: more concurrent Codex tasks burn quota faster (sensible: 1-4); switching off the Claude check leaves only the backup notice; 0 automatic regenerations sends every faulty asset to the user.
+Show the parameter table with a one-line explanation each and ask which to change. Check values make sense and explain risky ones: more concurrent Codex tasks burn quota faster (sensible: 1-4); switching off the Claude check leaves only the backup notice; 0 automatic regenerations sends every faulty asset to the user; Worktree folder `inside` keeps the projects folder tidy and reuses dependencies, but the project's test runners must skip `.codex-worktrees/` (coduet:start proposes the change before the first task).
 
 ## Step 6: save
 

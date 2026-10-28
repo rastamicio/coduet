@@ -9,7 +9,7 @@ Coduet è un plugin per Claude Code. Claude fa da regista (architettura, logica 
 ## Cosa fa
 
 - **Divide il lavoro**: all'avvio chiede se usare Codex; nel piano ogni task riceve un esecutore (Claude o Codex) con un prompt completo per Codex.
-- **Lavoro in parallelo e isolato**: ogni task di Codex gira con `codex exec` in un git worktree separato, su un branch `codex/<task>`.
+- **Lavoro in parallelo e isolato**: ogni task di Codex gira con `codex exec` in un git worktree separato, su un branch `codex/<task>`. Il worktree può stare accanto al progetto (predefinito) o dentro, in `.codex-worktrees/` (impostazione *Cartella dei worktree*). Codex gira in un processo a parte: se la sessione di Claude si chiude, finisce il lavoro lo stesso.
 - **Revisione prima dell'unione**: Claude verifica, rivede e unisce; i conflitti li risolve Claude, mai Codex.
 - **Passaggio di consegne**: lo stato del lavoro vive nel piano, così Claude e Codex possono riprendere l'uno dal punto dell'altro.
 - **Ripresa automatica**: se finisce la quota di Codex, la ripresa viene pianificata all'ora del reset, con un controllo successivo e un avviso di riserva.
