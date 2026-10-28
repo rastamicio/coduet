@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.6.0
+
+- **La quota di Claude è protetta**: nel piano ogni task di Claude dice se è *pronto per Codex* (tutti tranne sicurezza, segreti e migrazioni del database). Nel terminale, con la nuova barra di stato di Coduet (si accende dalle impostazioni e mantiene quella che avevi), Claude viene avvisato all'80% della quota e propone di prestare quei task a Codex: se non rispondi entro 5 minuti li presta da solo. Quando Claude arriva al limite, anche nell'app desktop, uno script li presta a Codex senza spendere token di Claude e ti avvisa sul PC.
+- **Claude riparte da solo al reset** (facoltativo, serve una volta il login del comando `claude`): riprende i task prestati che Codex non ha ancora iniziato e rivede con più attenzione quelli finiti. Senza ritorno automatico ricevi un avviso all'ora del reset.
+- **Quota di Codex esatta**: il nuovo script `codex-limits` legge da Codex la quota usata e l'orario di reset. Coduet non lancia un task se Codex ha finito la quota e pianifica la ripresa all'ora giusta, senza indovinarla dal testo dell'errore.
+- Test automatici degli script nella cartella `tests/` del repository (non installati con il plugin).
+
 ## 0.5.1
 
 - **Codex non resta più bloccato quando viene lanciato dall'app desktop di Claude**: senza un terminale, `codex exec` aspetta che il suo input si chiuda prima di partire, e l'app lo lascia aperto, quindi Codex restava in background all'infinito (dal comando `claude` in terminale invece funzionava). Il lancio dei task lo gestiva già; ora chiudono l'input anche la ripresa automatica e il comando di ripresa manuale. La guida, al passo 6 ("prova da Claude Code"), usa il comando corretto e spiega il problema tra i "Problemi noti" (segnalato da un utente).

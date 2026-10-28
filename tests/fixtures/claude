@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+# Fake claude CLI for tests. FAKE_CLAUDE_LOGGED=0 → not logged in.
+case "$1 $2" in
+  "auth status") [ "${FAKE_CLAUDE_LOGGED:-1}" = 1 ] && { echo "Logged in"; exit 0; }; echo "Not logged in"; exit 1 ;;
+esac
+[ -n "$FAKE_CLAUDE_MARKER" ] && echo "claude $*" >> "$FAKE_CLAUDE_MARKER"
+exit 0

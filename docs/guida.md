@@ -71,9 +71,15 @@ Le sessioni di Codex **non compaiono nella cronologia di ChatGPT**: restano sul 
 
 ### Quando finisce una quota
 
-- **Finisce la quota di Claude**: l'utente lo segnala ("chiudi e passa a Codex"). Claude aggiorna il piano e lancia su Codex i task adatti. Per questo Coduet lancia i task di Codex appena sono pronti, non alla fine: un task già lanciato continua anche se Claude si ferma di colpo. Alla sessione successiva Claude trova nel registro i task finiti nel frattempo e li rivede. In modalità ibrida, se la sessione sul PC si ferma (per esempio per il limite di Claude), la sessione cloud lo dice con l'orario e pianifica un nuovo tentativo dopo l'azzeramento, invece di aspettare in silenzio.
+- **Finisce la quota di Claude**: Claude è il regista, quindi la sua quota va protetta. Nel piano ogni task di Claude dice se è *pronto per Codex* (tutti tranne sicurezza, segreti e migrazioni del database).
+  - **Nel terminale**, con la barra di stato di Coduet attiva (si accende da "impostazioni di Coduet", la tua barra di stato resta e continua a funzionare), Claude riceve un avviso quando arriva all'80% (parametro modificabile). Ti chiede se prestare i task a Codex; se non rispondi entro 5 minuti li presta da solo e te lo scrive.
+  - **Al limite**, anche nell'app desktop dove la barra di stato non gira, uno script del plugin presta a Codex i task pronti senza spendere token di Claude e ti mostra un avviso sul PC.
+  - **Al reset**, se hai attivato il *ritorno automatico* (serve una volta il login del comando `claude`), il pianificatore del sistema riavvia Claude: i task prestati ancora in coda tornano a Claude, quelli in corso li finisce Codex, quelli finiti Claude li rivede con più attenzione. Senza ritorno automatico ricevi un avviso e scrivi "riprendi Coduet".
+  - Se finiscono entrambe le quote, ognuno riparte con i suoi task.
+  
+  Anche senza queste funzioni l'utente può dirlo a parole ("chiudi e passa a Codex"): Claude aggiorna il piano e lancia su Codex i task adatti. Per questo Coduet lancia i task di Codex appena sono pronti, non alla fine: un task già lanciato continua anche se Claude si ferma di colpo. Alla sessione successiva Claude trova nel registro i task finiti nel frattempo e li rivede. In modalità ibrida, se la sessione sul PC si ferma (per esempio per il limite di Claude), la sessione cloud lo dice con l'orario e pianifica un nuovo tentativo dopo l'azzeramento, invece di aspettare in silenzio.
 - **Finisce la quota di Codex**: la ripresa è automatica, su tre livelli:
-  1. **Ripresa**: l'Utilità di pianificazione di Windows rilancia Codex all'ora del reset. È gratuita e funziona anche se Claude ha finito la quota.
+  1. **Ripresa**: l'Utilità di pianificazione di Windows rilancia Codex all'ora del reset, letta direttamente da Codex (`codex app-server`) invece che dal testo dell'errore. Se Codex ha già finito la quota, Coduet non lancia nemmeno il task. È gratuita e funziona anche se Claude ha finito la quota.
   2. **Controllo di Claude**: 20 minuti dopo, un'attività programmata di Claude legge l'esito, avvisa l'utente e, se possibile, risolve da sola.
   3. **Avviso di riserva**: 40 minuti dopo compare una finestra di Windows con il comando manuale, ma solo se Claude non è intervenuto e la ripresa non è riuscita.
 
@@ -339,7 +345,7 @@ Coduet è stato verificato con **Codex CLI 0.163.0**. Codex si aggiorna spesso: 
 
 ### Ancora da verificare
 
-- Testo esatto dell'errore di limite di Codex, e se contiene l'ora del reset.
+- Barra di stato e hook di Coduet nell'app desktop (la barra di stato sembra non girare; l'hook al limite va verificato).
 - Generazione di immagini da `codex exec`.
 - Presenza di ffmpeg e Blender sul PC, se servono video o modelli 3D.
 - Script e ripresa automatica su un Mac o un PC Linux reale.

@@ -19,6 +19,7 @@ The most specific wins:
 - **Full** (see or review the settings): all steps.
 - **Quick** (a precise change, e.g. "set 3 Codex tasks"): show that item, current and new value, go to Step 6.
 - **Plans** (set or change subscriptions, or called by `coduet:start`): Step 3b, then Step 6.
+- **Claude's quota** ("Coduet should notice when Claude runs out"): Step 4b, then Step 6.
 - **Initial setup** (no `coduet-config`, or called at first use): the single guided setup below.
 
 ## Initial setup (one pass, about 2 minutes)
@@ -29,8 +30,9 @@ Tell the user at the start what it covers, then:
 3. **`claude` command** (PC sessions): run `coduet-update check` from the plugin's `scripts` folder (`windows/coduet-update.ps1` or `unix/coduet-update.sh`); if `cli=missing`, offer to install it as in `coduet:start` → `reference/updates.md`. It enables updating Coduet from the chat.
 4. **Codex**: `codex --version` and `codex login status`; if missing, give the install command for the system and say Coduet works without it until installed.
 5. **Where to launch Coduet**: explain in 3 lines — Codex runs only in sessions on the PC (a Code session in the project folder, or a project whose threads use a local default folder: project settings → local environment → add the project folder and make it default); cloud sessions can plan and review but can't run Codex. Offer to help set the local folder.
-6. Ask whether to see extra checks and parameters too (suggested: no, defaults).
-7. Save to the personal configuration (Step 6). If nothing differs from the defaults, still write the file with the plans (so the setup isn't offered again).
+6. **Claude's quota** (PC sessions, Claude Pro/Max): Step 4b.
+7. Ask whether to see extra checks and parameters too (suggested: no, defaults).
+8. Save to the personal configuration (Step 6). If nothing differs from the defaults, still write the file with the plans (so the setup isn't offered again).
 
 ## Step 1: read
 
@@ -63,9 +65,15 @@ Changing subscription later: redo this step.
 
 Offer checks Coduet doesn't do by itself, with examples fitting the project (accessibility, performance, dependency security, copy and translations, mobile behaviour, asset licences, privacy) or the user's own. Ask the phase for each (usually Review or Final check). Allow removing existing ones.
 
+## Step 4b: Claude's quota
+
+Explain in two lines: in terminal sessions Coduet can read Claude's quota from the status line and lend tasks to Codex at the threshold; in the desktop app the status line doesn't run, so it acts only when the limit is hit. Then two multiple-choice questions (AskUserQuestion), one recommended option each:
+1. **Status line**: "Turn on (recommended)" / "No". On → run `statusline-install install` from the plugin's `scripts` folder; show `backup=` and the `undo=` command; the user's previous status line keeps working (chained). `error=` → say so, change nothing. Check first with `statusline-install status`.
+2. **Claude automatic return** (restart Claude by itself when its quota resets): "Turn on (recommended)" if `claude auth status` works, else "Only a notice (recommended)" and explain the one-time login (`coduet:start` → `reference/updates.md`). On → parameter `Claude automatic return` = `on`.
+
 ## Step 5: parameters
 
-Show the parameter table with a one-line explanation each and ask which to change. Check values make sense and explain risky ones: more concurrent Codex tasks burn quota faster (sensible: 1-4); switching off the Claude check leaves only the backup notice; 0 automatic regenerations sends every faulty asset to the user; Worktree folder `inside` keeps the projects folder tidy and reuses dependencies, but the project's test runners must skip `.codex-worktrees/` (coduet:start proposes the change before the first task).
+Show the parameter table with a one-line explanation each and ask which to change. Check values make sense and explain risky ones: more concurrent Codex tasks burn quota faster (sensible: 1-4); switching off the Claude check leaves only the backup notice; 0 automatic regenerations sends every faulty asset to the user; a Claude quota threshold above 90% may leave no room to hand tasks over (sensible: 70-85); Worktree folder `inside` keeps the projects folder tidy and reuses dependencies, but the project's test runners must skip `.codex-worktrees/` (coduet:start proposes the change before the first task).
 
 ## Step 6: save
 

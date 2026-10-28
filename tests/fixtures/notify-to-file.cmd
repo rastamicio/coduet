@@ -1,0 +1,1 @@
+@echo %* >> "%NOTIFY_FILE%"

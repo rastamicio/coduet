@@ -13,7 +13,7 @@ User present: ask whether to give the unfinished Codex tasks to Claude or auto-r
 
 ## 2. Times
 
-Reset time from the error in `.codex-output.txt`; if missing, ask the user (`/status` in Codex); if absent, use the reset estimate parameter and note it.
+Reset time from `codex-limits` (`resets_at` of the used-up window; `CODEX WAITING` already gives it); if `ok=0`, from the error in `.codex-output.txt`; if missing, ask the user (`/status` in Codex); if absent, use the reset estimate parameter and note it.
 - Resume = reset + margin (several tasks waiting: stagger them by the concurrent limit, in the order they stopped).
 - Claude check = resume + parameter (skip if off).
 - Backup notice = resume + parameter.
@@ -46,3 +46,13 @@ Use the session's push notification tool if available, otherwise a message.
 ## Measuring the Claude check's cost (first times)
 
 Claude can't see its quota. For the first N checks (parameter; 0 = none), after the check tell the user its start and end time and what was done, and ask them to compare session and weekly usage (app settings → Usage, or `/usage`) before and after. Log each in `docs/codex-registro.md` ("Claude check cost"). After the last one, summarise and ask whether to keep the check or switch it off (`coduet:settings`); off → the backup notice is the only notice.
+
+## Claude's return
+
+At a start after Claude's quota reset (a scheduled `claude -p` run, or the user writes "riprendi Coduet"), after the start sequence:
+- Tasks `lent to Codex` still queued (no `codex-status` entry, no worktree): set them back to `**Status:** open` for Claude.
+- Running: leave them to Codex.
+- Finished: strict review (`reference/handoff.md`), then merge into the base branch as in Step 6.
+- Then go on with the plan.
+
+In a scheduled `claude -p` run nobody is watching: no merge into `main`, no force push, no deletions, no questions. A decision needed → write it in the plan (blocked, why), push, and stop with a desktop notice (`notify`).
