@@ -32,6 +32,8 @@ Reset time from the error in `.codex-output.txt`; if missing, ask the user (`/st
 
 ## Check (at the scheduled time and at every session start)
 
+First, tasks that ended while no session was watching (Codex outlives the session that launched it): in `codex-status`, `done` not yet merged → review (Step 6); `limit` → Step 8; `error` → read `.codex-output.txt`, relaunch or explain; `stopped` (process gone, no outcome) → relaunch with `codex-run` in the same worktree.
+
 For each waiting task, read `<wt>/.codex-ripresa.log`:
 - `COMPLETATO` → review (Step 6), clear the plan line, send "Resume outcome: completed".
 - `ERRORE` → read `.codex-output-ripresa.txt`. Fixable (command, path, session not found) → relaunch with `codex-run` in the same worktree (same task name; the prompt says to continue from the work present). Not fixable → explain to the user; they can just reply "yes, relaunch".

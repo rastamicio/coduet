@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.5.0
+
+- **Nuova impostazione "Cartella dei worktree"**: `accanto` (predefinito, come prima: `../<progetto>-codex-<task>`) oppure `dentro` (`<progetto>/.codex-worktrees/<task>`). Con `dentro` la cartella dei progetti resta pulita e Node trova le dipendenze della copia principale, senza reinstallarle e senza giunzioni. Prima del primo task `check-copy` segnala i file di configurazione di test e strumenti che non escludono `.codex-worktrees/` (`worktree_exclusion=missing:…`): Coduet propone la modifica e, senza il tuo ok, usa `accanto`.
+- **Codex non dipende più dalla sessione di Claude**: `codex-run` lancia Codex in un processo separato, che finisce il lavoro e scrive l'esito nel registro anche se la sessione di Claude si chiude (per esempio per il limite d'uso). Claude riceve comunque l'avviso di fine quando la sessione è ancora aperta.
+- **Ripartenze più robuste quando finisce la quota di Claude**: i task Codex si lanciano appena pronti. La sessione sul PC in modalità ibrida lancia tutti i task prima di fare il resto. All'avvio Coduet rivede i task finiti o interrotti mentre nessuno guardava. Se la sessione sul PC si ferma, la sessione cloud lo dice con l'orario e pianifica un nuovo tentativo invece di promettere un avviso che non può dare.
+
 ## 0.4.2
 
 - Windows: le attività pianificate della ripresa e dell'avviso di riserva si cancellano da sole appena hanno girato, invece di restare registrate per circa due giorni (segnalato dal collaudo).

@@ -56,13 +56,22 @@ Le sessioni di Codex **non compaiono nella cronologia di ChatGPT**: restano sul 
 
 1. **Domanda iniziale**: si sceglie se dividere il lavoro (completa, solo asset/test/documentazione, oppure no).
 2. **Ideazione e piano**: si usano le skill di metodo (di default Superpowers). Nel piano ogni task riceve un esecutore. I task di Codex arrivano con un prompt completo e autosufficiente, perché Codex non vede la conversazione con Claude.
-3. **Esecuzione in parallelo**: ogni task di Codex gira in un **git worktree** separato, su un proprio branch, al massimo 2 alla volta. Claude intanto lavora sui suoi task.
+3. **Esecuzione in parallelo**: ogni task di Codex gira in un **git worktree** separato, su un proprio branch, al massimo 2 alla volta. Claude intanto lavora sui suoi task. Codex gira in un processo a parte, quindi continua anche se la sessione di Claude si chiude, e alla fine scrive da solo l'esito nel registro dei task.
+
+   **Cartella dei worktree** (si cambia con `/coduet:settings`):
+
+   | Valore | Dove sta il worktree | Quando conviene |
+   |---|---|---|
+   | `accanto` (predefinito) | `../<progetto>-codex-<task>` | Va sempre bene, ma la cartella dei progetti si riempie di cartelle temporanee e nel worktree mancano le dipendenze (`node_modules` e simili) |
+   | `dentro` | `<progetto>/.codex-worktrees/<task>` | La cartella dei progetti resta pulita e Node trova le dipendenze della copia principale, senza reinstallarle |
+
+   Con `dentro`, prima del primo task Coduet controlla che i test e gli strumenti del progetto (Vitest, Jest, pytest, tsconfig, ESLint…) ignorino `.codex-worktrees/`. Altrimenti i test girerebbero due volte, o si romperebbero per il lavoro a metà di Codex. Se manca l'esclusione propone la modifica, e senza il tuo ok usa `accanto`. Attenzione: `git clean -x` nella copia principale cancellerebbe anche i worktree. Con Python il guadagno è minore, perché l'ambiente virtuale non si trova risalendo le cartelle.
 4. **Revisione**: Claude legge il risultato, esegue i test, fa la revisione, poi fa lui il commit e il merge.
 5. **Passaggio di consegne**: la sezione "Stato e passaggio di consegne" permette a chiunque dei due di ripartire senza contesto.
 
 ### Quando finisce una quota
 
-- **Finisce la quota di Claude**: l'utente lo segnala ("chiudi e passa a Codex"). Claude aggiorna il piano e fornisce il comando per far proseguire Codex.
+- **Finisce la quota di Claude**: l'utente lo segnala ("chiudi e passa a Codex"). Claude aggiorna il piano e lancia su Codex i task adatti. Per questo Coduet lancia i task di Codex appena sono pronti, non alla fine: un task già lanciato continua anche se Claude si ferma di colpo. Alla sessione successiva Claude trova nel registro i task finiti nel frattempo e li rivede. In modalità ibrida, se la sessione sul PC si ferma (per esempio per il limite di Claude), la sessione cloud lo dice con l'orario e pianifica un nuovo tentativo dopo l'azzeramento, invece di aspettare in silenzio.
 - **Finisce la quota di Codex**: la ripresa è automatica, su tre livelli:
   1. **Ripresa**: l'Utilità di pianificazione di Windows rilancia Codex all'ora del reset. È gratuita e funziona anche se Claude ha finito la quota.
   2. **Controllo di Claude**: 20 minuti dopo, un'attività programmata di Claude legge l'esito, avvisa l'utente e, se possibile, risolve da sola.
