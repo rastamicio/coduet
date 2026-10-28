@@ -146,7 +146,7 @@ If missing, create it with the project rules (as in `CLAUDE.md`) plus: work only
 
 ## Step 5: parallel execution
 
-**Codex runs only through `codex exec` (the scripts), never interactively**: interactive mode stops on permission prompts nobody can answer.
+**Codex runs only through `codex exec` (the scripts), never interactively**: interactive mode stops on permission prompts nobody can answer. Any `codex exec` run outside the scripts needs stdin closed (`< /dev/null`, cmd `< NUL`): with no terminal (e.g. the desktop app) it waits for stdin forever.
 
 For each Codex task:
 1. Write the prompt to a file (e.g. scratch folder).

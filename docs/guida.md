@@ -264,12 +264,14 @@ Se `ricordo.txt` contiene `prova.txt`, la ripresa mantiene il contesto.
 
 ```
 Lancia Codex in background con questo comando, nella cartella corrente:
-codex exec --skip-git-repo-check --sandbox workspace-write "crea un file saluti.md con una lista di 3 saluti in lingue diverse"
+codex exec --skip-git-repo-check --sandbox workspace-write "crea un file saluti.md con una lista di 3 saluti in lingue diverse" < /dev/null
 Mentre Codex lavora, crea tu un file orario.txt con l'ora attuale.
 Quando Codex ha finito, leggi saluti.md e dimmi cosa contiene e quanti token ha usato Codex.
 ```
 
 Se Claude crea il suo file e poi riporta il contenuto di `saluti.md` e i token, il collegamento è completo.
+
+`< /dev/null` chiude l'input di Codex: senza, dall'app desktop di Claude Codex resta in background all'infinito (vedi "Problemi noti"). Gli script di Coduet lo fanno già da soli.
 
 ### Passo 7: installare Coduet
 
@@ -323,6 +325,7 @@ Consiglio: dopo l'installazione fai il collaudo, poi provalo su un progetto picc
 
 ### Problemi noti
 
+- **`codex exec` lanciato dall'app desktop resta in background all'infinito**: senza un terminale, Codex aspetta che il suo input (stdin) si chiuda prima di partire, e l'app lo lascia aperto. Da terminale non succede. Rimedio: aggiungere `< /dev/null` al comando (`< NUL` nel prompt dei comandi di Windows). Gli script di Coduet lo fanno già.
 - **`codex exec` parte in sola lettura**: senza `--sandbox workspace-write` non può scrivere file.
 - **`codex exec resume` non ha `--sandbox` né `--cd`**: la sandbox si imposta con `-c sandbox_mode="workspace-write"` e il comando va lanciato da dentro la cartella. La ripresa cerca le sessioni nella cartella corrente.
 - **Ragionamento disattivato di default in `exec`** ("reasoning effort: none"): va impostato con `-c model_reasoning_effort="low|medium|high"`.

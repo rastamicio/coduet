@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.5.1
+
+- **Codex non resta più bloccato quando viene lanciato dall'app desktop di Claude**: senza un terminale, `codex exec` aspetta che il suo input si chiuda prima di partire, e l'app lo lascia aperto, quindi Codex restava in background all'infinito (dal comando `claude` in terminale invece funzionava). Il lancio dei task lo gestiva già; ora chiudono l'input anche la ripresa automatica e il comando di ripresa manuale. La guida, al passo 6 ("prova da Claude Code"), usa il comando corretto e spiega il problema tra i "Problemi noti" (segnalato da un utente).
+
 ## 0.5.0
 
 - **Nuova impostazione "Cartella dei worktree"**: `accanto` (predefinito, come prima: `../<progetto>-codex-<task>`) oppure `dentro` (`<progetto>/.codex-worktrees/<task>`). Con `dentro` la cartella dei progetti resta pulita e Node trova le dipendenze della copia principale, senza reinstallarle e senza giunzioni. Prima del primo task `check-copy` segnala i file di configurazione di test e strumenti che non escludono `.codex-worktrees/` (`worktree_exclusion=missing:…`): Coduet propone la modifica e, senza il tuo ok, usa `accanto`.
