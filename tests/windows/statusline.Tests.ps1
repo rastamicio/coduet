@@ -8,7 +8,7 @@ $out = Run-SL $j
 $saved = Get-Content $q -Raw
 Assert-Contains $saved '"five_hour":{"used_percentage":44,"resets_at":1793160600}' 'save: rate_limits kept'
 Assert-Contains $saved '"read":"' 'save: read time'
-Assert-Eq 'Claude 5h 44% · week 12%' $out 'no prev: short line'
+Assert-Eq "Claude 5h 44% $([char]0x00B7) week 12%" $out 'no prev: short line'
 
 Set-Content $q '{"stale":1}'
 $null = Run-SL '{"model":{"display_name":"Opus"}}'

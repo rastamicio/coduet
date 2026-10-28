@@ -12,6 +12,8 @@ function Assert-Contains([string]$text, [string]$needle, [string]$name) {
 function Assert-NotContains([string]$text, [string]$needle, [string]$name) {
   if ($text.Contains($needle)) { $script:Fail++; Write-Output "FAIL ${name}: [$needle] found in [$text]" } else { $script:Pass++ }
 }
+# Child scripts write UTF-8 (status line): decode their output the same way.
+[Console]::OutputEncoding = New-Object Text.UTF8Encoding $false
 # Isolated Coduet home for each test file.
 $env:CODUET_HOME = Join-Path $env:TEMP ('coduet-test-' + [guid]::NewGuid().ToString('N'))
 New-Item -ItemType Directory -Force -Path $env:CODUET_HOME | Out-Null

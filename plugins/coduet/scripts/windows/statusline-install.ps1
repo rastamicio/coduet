@@ -31,7 +31,7 @@ switch ($Action) {
   }
   'uninstall' {
     if ((Kind) -ne 'coduet') { "statusline=$(Kind)"; break }
-    if ((Test-Path $prev) -and (Get-Item $prev).Length -gt 0) { $d.statusLine.command = (Get-Content $prev -Raw); 'statusline=other' }
+    if ((Test-Path $prev) -and (Get-Item $prev).Length -gt 0) { $d.statusLine.command = [IO.File]::ReadAllText($prev); 'statusline=other' }
     else { $d.PSObject.Properties.Remove('statusLine'); 'statusline=none' }
     Save
     if (Test-Path $prev) { Remove-Item $prev }

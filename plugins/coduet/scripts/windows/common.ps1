@@ -156,7 +156,7 @@ function Coduet-ParamOn([string]$root, [string]$regex) {
   foreach ($f in @((Join-Path $root '.coduet.md'), (Join-Path $env:USERPROFILE '.claude\skills\coduet-config\SKILL.md'))) {
     if (-not (Test-Path -LiteralPath $f)) { continue }
     $l = Get-Content -LiteralPath $f -Encoding UTF8 | Where-Object { $_ -match $regex } | Select-Object -Last 1
-    if ($l) { return [bool]($l -match '\|\s*(on|yes|sì|si|attivo|attiva)\s*\|') }
+    if ($l) { return [bool]($l -match '\|\s*(on|yes|s\u00ec|si|attivo|attiva)\s*\|') }
   }
   return $false
 }

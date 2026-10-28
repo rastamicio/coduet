@@ -1,4 +1,5 @@
 # Fake Codex CLI for Windows tests. $env:FAKE_CODEX_MODE: ok | reached | silent | noserver.
+$args = @(($env:FAKE_CODEX_ARGS -split ' ') | Where-Object { $_ })
 $mode = if ($env:FAKE_CODEX_MODE) { $env:FAKE_CODEX_MODE } else { 'ok' }
 switch ($args[0]) {
   'app-server' {
@@ -14,7 +15,10 @@ switch ($args[0]) {
     }
   }
   'exec' {
-    if ($env:FAKE_CODEX_MARKER) { Add-Content -Path $env:FAKE_CODEX_MARKER -Value ("exec " + ($args -join ' ')) }
+    # The worker starts through WMI and gets no environment from the test: without the marker variable, leave a file in the --cd folder.
+    $cd = $args[[array]::IndexOf($args, '--cd') + 1].Trim('"')
+    $marker = if ($env:FAKE_CODEX_MARKER) { $env:FAKE_CODEX_MARKER } else { Join-Path $cd '.fake-codex-exec' }
+    Add-Content -Path $marker -Value ("exec " + ($args -join ' '))
     $null = [Console]::In.ReadToEnd()
     'session id: fake-1'; 'tokens used'; '1234'
   }

@@ -16,5 +16,5 @@ $prev = Join-Path $h 'statusline-prev.txt'
 if ((Test-Path $prev) -and (Get-Item $prev).Length -gt 0) {
   $in | & $env:ComSpec /d /s /c (Get-Content $prev -Raw)
 } elseif ($rl) {
-  "Claude 5h $($rl.five_hour.used_percentage)% · week $($rl.seven_day.used_percentage)%"
+  "Claude 5h $($rl.five_hour.used_percentage)% $([char]0x00B7) week $($rl.seven_day.used_percentage)%"
 }
