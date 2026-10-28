@@ -1,6 +1,6 @@
 {
   "name": "coduet",
-  "version": "0.5.1",
+  "version": "0.6.0",
   "description": "Splits project work between Claude Code and Codex CLI: plan, parallel runs, review, handoffs and automatic resume when a quota runs out. Independent project, not affiliated with Anthropic or OpenAI.",
   "author": {
     "name": "rastamicio",
