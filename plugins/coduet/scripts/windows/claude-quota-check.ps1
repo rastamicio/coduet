@@ -1,8 +1,8 @@
 # UserPromptSubmit hook: one line of context for Claude when its quota passes the handoff threshold, once per window.
 # Silent (and free) otherwise, and outside Coduet projects.
 . (Join-Path $PSScriptRoot 'common.ps1')
-[Console]::InputEncoding = New-Object Text.UTF8Encoding $false
-$in = [Console]::In.ReadToEnd()
+# Raw bytes decoded as UTF-8 (Claude Code sends UTF-8): setting [Console]::InputEncoding loses the piped stdin on PowerShell 5.1.
+$ms = New-Object IO.MemoryStream; [Console]::OpenStandardInput().CopyTo($ms); $in = (New-Object Text.UTF8Encoding $false).GetString($ms.ToArray()).TrimStart([char]0xFEFF)
 $cwd = ''; try { $cwd = ($in | ConvertFrom-Json).cwd } catch { }
 if (-not $cwd) { $cwd = (Get-Location).Path }
 if (-not (Find-CoduetPlan $cwd)) { exit 0 }

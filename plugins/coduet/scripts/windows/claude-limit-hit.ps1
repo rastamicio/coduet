@@ -1,8 +1,8 @@
 # StopFailure hook (rate_limit): Claude hit its usage limit. Without spending Claude tokens, lends the plan's ready
 # Claude tasks to Codex (if Codex has quota), schedules Claude's return and tells the user. Silent outside Coduet projects.
 . (Join-Path $PSScriptRoot 'common.ps1')
-[Console]::InputEncoding = New-Object Text.UTF8Encoding $false
-$in = [Console]::In.ReadToEnd()
+# Raw bytes decoded as UTF-8 (Claude Code sends UTF-8): setting [Console]::InputEncoding loses the piped stdin on PowerShell 5.1.
+$ms = New-Object IO.MemoryStream; [Console]::OpenStandardInput().CopyTo($ms); $in = (New-Object Text.UTF8Encoding $false).GetString($ms.ToArray()).TrimStart([char]0xFEFF)
 $j = $null; try { $j = $in | ConvertFrom-Json } catch { exit 0 }
 # Claude Code puts the error type in "error" ("error_type" in some versions).
 $et = if ($j.error_type) { $j.error_type } else { $j.error }
