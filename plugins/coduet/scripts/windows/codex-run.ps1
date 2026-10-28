@@ -15,7 +15,8 @@ if ($Worker) {
   $WT = Task-Get $TF 'worktree'; $Effort = Task-Get $TF 'effort'; $Out = Join-Path $WT '.codex-output.txt'
   $imgArgs = ((Task-Get $TF 'images') -split '\|' | Where-Object { $_ } | ForEach-Object { "-i `"$_`"" }) -join ' '
   # cmd handles redirection and quoting of paths with spaces or apostrophes reliably.
-  $cmdLine = "codex exec --cd `"$WT`" --sandbox workspace-write -c model_reasoning_effort=`"$Effort`" $imgArgs -o `"$WT\.codex-esito.md`" - < `"$WT\.codex-prompt.md`" > `"$Out`" 2>&1"
+  $exe = Task-Get $TF 'codex'; if (-not $exe) { $exe = 'codex' }
+  $cmdLine = "`"$exe`" exec --cd `"$WT`" --sandbox workspace-write -c model_reasoning_effort=`"$Effort`" $imgArgs -o `"$WT\.codex-esito.md`" - < `"$WT\.codex-prompt.md`" > `"$Out`" 2>&1"
   $p = Start-Process -FilePath $env:ComSpec -ArgumentList '/d', '/s', '/c', "`"$cmdLine`"" -WindowStyle Hidden -PassThru
   $p.WaitForExit(); $code = $p.ExitCode
   $tok = Codex-Tokens $Out; $ses = Codex-Session $Out
@@ -51,6 +52,9 @@ Copy-Item -LiteralPath $PromptFile (Join-Path $WT '.codex-prompt.md') -Force
 Task-Set $TF project $Project; Task-Set $TF task $Task; Task-Set $TF worktree $WT
 Task-Set $TF status running; Task-Set $TF started (Now-Iso); Task-Set $TF effort $Effort
 Task-Set $TF images (($Image | ForEach-Object { (Resolve-Path -LiteralPath $_).Path }) -join '|')
+# The detached worker may not inherit this session's PATH: give it Codex's full path.
+$cx = Get-Command codex -CommandType Application -ErrorAction SilentlyContinue | Where-Object { $_.Extension -in '.exe', '.cmd', '.bat' } | Select-Object -First 1
+Task-Set $TF codex $(if ($cx) { $cx.Source } else { '' })
 foreach ($k in 'pid', 'ended', 'exit', 'tokens', 'session', 'files') { Task-Set $TF $k '' }
 
 # Started through WMI the worker is not a child of this process: it survives the end of the Claude session.
