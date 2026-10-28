@@ -122,3 +122,37 @@ hook_field() { # json field
 }
 # Local HH:MM of a Unix time.
 hhmm() { date -d "@$1" '+%H:%M' 2>/dev/null || date -r "$1" '+%H:%M'; }
+
+# Schedules a shell command once (at, systemd-run or a LaunchAgent). Prints scheduled=<label> via=… when=… or error.
+schedule_one() { # when command label
+  local when="$1" cmd="$2" label="$3"
+  if command -v at >/dev/null 2>&1; then
+    echo "$cmd" | at "$(date -d "$when" '+%H:%M %Y-%m-%d' 2>/dev/null || date -j -f '%Y-%m-%d %H:%M' "$when" '+%H:%M %m/%d/%Y')" 2>/dev/null && { echo "scheduled=$label via=at when=$when"; return 0; }
+  fi
+  if command -v systemd-run >/dev/null 2>&1; then
+    systemd-run --user --quiet --on-calendar="$when" --unit="coduet-$label-$(date +%s)" bash -c "$cmd" 2>/dev/null && { echo "scheduled=$label via=systemd when=$when"; return 0; }
+  fi
+  if [ "$(uname)" = "Darwin" ]; then
+    local id="dev.coduet.$label.$(date +%s)" plist="$HOME/Library/LaunchAgents/$id.plist"
+    local Y M Dd H Mi; read -r Y M Dd H Mi <<< "$(echo "$when" | tr '-' ' ' | tr ':' ' ')"
+    cat > "$plist" <<EOF
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0"><dict>
+<key>Label</key><string>$id</string>
+<key>ProgramArguments</key><array><string>/bin/bash</string><string>-c</string><string>$cmd; launchctl unload "$plist"; rm -f "$plist"</string></array>
+<key>StartCalendarInterval</key><dict><key>Month</key><integer>$((10#$M))</integer><key>Day</key><integer>$((10#$Dd))</integer><key>Hour</key><integer>$((10#$H))</integer><key>Minute</key><integer>$((10#$Mi))</integer></dict>
+</dict></plist>
+EOF
+    launchctl load "$plist" && { echo "scheduled=$label via=launchd when=$when"; return 0; }
+  fi
+  echo "scheduled=$label via=none error=no-scheduler"; return 1
+}
+
+# The command that restarts Claude in a project after its quota resets (headless, limited permissions).
+claude_return_cmd() { # claude-path
+  local s="$PLUGIN_ROOT/scripts/unix"
+  printf '%q -p %q --permission-mode acceptEdits --allowedTools %q' "$1" \
+    "Use the coduet:start skill: resume after Claude's quota reset." \
+    "Bash(bash $s/:*),Bash(git status:*),Bash(git diff:*),Bash(git log:*),Bash(git add:*),Bash(git commit:*),Bash(git merge:*),Bash(git worktree:*),Bash(git fetch:*),Bash(git push),Read,Edit,Write,Grep,Glob"
+}

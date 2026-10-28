@@ -143,3 +143,10 @@ function Repo-Root([string]$dir) {
   $r = git -C $dir rev-parse --show-toplevel 2>$null
   if ($LASTEXITCODE -eq 0 -and $r) { return ($r -replace '/', '\') } else { return $dir }
 }
+
+# Arguments that restart Claude in a project after its quota resets (headless, limited permissions).
+function Claude-ReturnArgs {
+  $s = Join-Path $PluginRoot 'scripts\windows'
+  $tools = "Bash(powershell -NoProfile -ExecutionPolicy Bypass -File $s\:*),Bash(git status:*),Bash(git diff:*),Bash(git log:*),Bash(git add:*),Bash(git commit:*),Bash(git merge:*),Bash(git worktree:*),Bash(git fetch:*),Bash(git push),Read,Edit,Write,Grep,Glob"
+  return "-p `"Use the coduet:start skill: resume after Claude's quota reset.`" --permission-mode acceptEdits --allowedTools `"$tools`""
+}
