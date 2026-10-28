@@ -69,3 +69,38 @@ codex_reset_at() {
   if [ "${s:-0}" -ge 100 ] || [ "$r" = secondary ]; then echo "$sr"
   elif [ "${p:-0}" -ge 100 ] || [ -n "$r" ]; then echo "$pr"; fi
 }
+
+# Coduet plan: a .md file at the repository root or under docs/ (3 levels) with "## Status and handoff" and "PC copy:".
+# Prints its path (the most recently modified if several), or nothing.
+find_coduet_plan() { # dir
+  local root f best=''
+  root="$(git -C "$1" rev-parse --show-toplevel 2>/dev/null || (cd "$1" && pwd))"
+  while IFS= read -r f; do
+    grep -q '^## Status and handoff' "$f" 2>/dev/null && grep -q 'PC copy:' "$f" 2>/dev/null || continue
+    if [ -z "$best" ] || [ "$f" -nt "$best" ]; then best="$f"; fi
+  done < <( { find "$root" -maxdepth 1 -name '*.md' -type f; [ -d "$root/docs" ] && find "$root/docs" -maxdepth 4 -name '*.md' -type f \
+    -not -path '*/.codex-worktrees/*' -not -path '*/node_modules/*'; } 2>/dev/null )
+  [ -n "$best" ] && echo "$best"
+}
+# One line "<N>|<title>|<base branch>" per task with Executor Claude, Codex-ready yes, Status open.
+plan_lendable() { # plan
+  awk '
+    function flush() { if (n != "" && tolower(ex) == "claude" && tolower(cr) == "yes" && tolower(st) == "open") print n "|" ti "|" br }
+    /^### Task [0-9]+:/ { flush(); n = $3; sub(/:$/, "", n); ti = $0; sub(/^### Task [0-9]+:[ \t]*/, "", ti); ex = cr = st = br = ""; next }
+    /^## / { flush(); n = ""; next }
+    n != "" && /\*\*Executor:\*\*/    { ex = $0; sub(/.*\*\*Executor:\*\*[ \t]*/, "", ex); sub(/[ \t]+$/, "", ex) }
+    n != "" && /\*\*Codex-ready:\*\*/ { cr = $0; sub(/.*\*\*Codex-ready:\*\*[ \t]*/, "", cr); sub(/[ \t]+$/, "", cr) }
+    n != "" && /\*\*Status:\*\*/      { st = $0; sub(/.*\*\*Status:\*\*[ \t]*/, "", st); sub(/[ \t]+$/, "", st) }
+    n != "" && /\*\*Base branch:\*\*/ { br = $0; sub(/.*\*\*Base branch:\*\*[ \t]*/, "", br); sub(/[ \t]+$/, "", br) }
+    END { flush() }' "$1"
+}
+# Changes only the Status line of task N.
+plan_set_status() { # plan N status
+  local tmp; tmp="$(mktemp)"
+  awk -v n="$2" -v st="$3" '
+    /^### Task [0-9]+:/ { t = $3; sub(/:$/, "", t); cur = (t == n) }
+    /^## / { cur = 0 }
+    cur && /\*\*Status:\*\*/ { sub(/\*\*Status:\*\*.*/, "**Status:** " st) }
+    { print }' "$1" > "$tmp" && cat "$tmp" > "$1"
+  rm -f "$tmp"
+}

@@ -81,3 +81,48 @@ function Codex-ResetAt([string[]]$lines) {
   if ($p -ge 100 -or $m['reached']) { return $m['primary_resets_at'] }
   return ''
 }
+
+# Coduet plan: a .md file at the repository root or under docs\ (3 levels) with "## Status and handoff" and "PC copy:".
+# Returns its path (the most recently modified if several), or ''.
+function Find-CoduetPlan([string]$dir) {
+  $root = git -C $dir rev-parse --show-toplevel 2>$null
+  if ($LASTEXITCODE -ne 0 -or -not $root) { $root = (Resolve-Path -LiteralPath $dir).Path } else { $root = $root -replace '/', '\' }
+  $files = @(Get-ChildItem -LiteralPath $root -Filter *.md -File -ErrorAction SilentlyContinue)
+  $docs = Join-Path $root 'docs'
+  if (Test-Path -LiteralPath $docs) {
+    $files += @(Get-ChildItem -LiteralPath $docs -Filter *.md -File -Recurse -Depth 3 -ErrorAction SilentlyContinue |
+      Where-Object { $_.FullName -notmatch '\\(\.codex-worktrees|node_modules)\\' })
+  }
+  $best = $files | Where-Object {
+    (Select-String -LiteralPath $_.FullName -Pattern '^## Status and handoff' -Quiet) -and (Select-String -LiteralPath $_.FullName -Pattern 'PC copy:' -SimpleMatch -Quiet)
+  } | Sort-Object LastWriteTime -Descending | Select-Object -First 1
+  if ($best) { return $best.FullName } else { return '' }
+}
+function Plan-Field([string]$line, [string]$name) {
+  if ($line -match ('\*\*' + $name + ':\*\*\s*(.*?)\s*$')) { return $Matches[1] } else { return $null }
+}
+# One line "<N>|<title>|<base branch>" per task with Executor Claude, Codex-ready yes, Status open.
+function Plan-Lendable([string]$plan) {
+  $out = @(); $t = $null
+  $flush = { if ($t -and $t.ex -eq 'claude' -and $t.cr -eq 'yes' -and $t.st -eq 'open') { "$($t.n)|$($t.ti)|$($t.br)" } }
+  foreach ($l in Get-Content -LiteralPath $plan -Encoding UTF8) {
+    if ($l -match '^### Task (\d+):\s*(.*)$') { $out += & $flush; $t = @{ n = $Matches[1]; ti = $Matches[2]; ex = ''; cr = ''; st = ''; br = '' }; continue }
+    if ($l -match '^## ') { $out += & $flush; $t = $null; continue }
+    if (-not $t) { continue }
+    foreach ($f in @(@('Executor', 'ex'), @('Codex-ready', 'cr'), @('Status', 'st'), @('Base branch', 'br'))) {
+      $v = Plan-Field $l $f[0]; if ($null -ne $v) { $t[$f[1]] = $(if ($f[1] -eq 'br') { $v } else { $v.ToLower() }) }
+    }
+  }
+  $out += & $flush
+  return $out
+}
+# Changes only the Status line of task N.
+function Plan-SetStatus([string]$plan, [string]$n, [string]$status) {
+  $cur = $false
+  $lines = foreach ($l in Get-Content -LiteralPath $plan -Encoding UTF8) {
+    if ($l -match '^### Task (\d+):') { $cur = ($Matches[1] -eq $n) } elseif ($l -match '^## ') { $cur = $false }
+    if ($cur -and $l -match '\*\*Status:\*\*') { $l = $l -replace '\*\*Status:\*\*.*', "**Status:** $status" }
+    $l
+  }
+  [IO.File]::WriteAllLines($plan, [string[]]$lines, (New-Object Text.UTF8Encoding $false))
+}
