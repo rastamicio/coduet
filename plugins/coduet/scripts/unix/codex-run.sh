@@ -2,7 +2,7 @@
 # Runs one Codex task in its own git worktree and records its status.
 #   codex-run.sh <project-folder> <task-name> <prompt-file> [--base <branch>] [--effort <low|medium|high>] [--max <n>]
 #                [--worktree-dir beside|inside] [--image <file>]...
-# Run it in the background: it ends with a single "CODEX ..." summary line.
+# Run it in the background: it ends with a single "CODEX ..." summary line (CODEX WAITING, exit 4, when Codex has no quota).
 # Codex runs in a detached worker, so it goes on (and records its outcome) even if this script or the Claude session stops.
 source "$(dirname "$0")/common.sh"
 
@@ -33,6 +33,12 @@ TF="$(task_file "$NAME" "$TASK")"
 
 if [ "$(active_count)" -ge "$MAX" ]; then
   echo "CODEX QUEUED task=$TASK reason=max-$MAX-active"; exit 3
+fi
+
+# No quota left: don't start Codex (unknown = launch as before).
+LIM="$(bash "$(dirname "$0")/codex-limits.sh")"
+if echo "$LIM" | codex_available; [ $? -eq 1 ]; then
+  echo "CODEX WAITING task=$TASK reason=quota resets_at=$(echo "$LIM" | codex_reset_at)"; exit 4
 fi
 
 case "$WTDIR" in inside|dentro) WT="$PROJECT/.codex-worktrees/$TASK";; *) WT="$(dirname "$PROJECT")/$NAME-codex-$TASK";; esac
