@@ -26,3 +26,7 @@ In-chat updating needs the Claude Code CLI. The desktop app doesn't install it b
 4. Verify: `coduet-update check` must show `cli=<path>` (the script also finds `~/.local/bin` before PATH is active).
 5. Tell the user to close and reopen the Claude app (and open terminals) so every session sees the command.
 6. On failure: explain briefly, link https://code.claude.com/docs/en/setup, go on.
+
+## Logging in the `claude` command (Claude's automatic return)
+
+Claude's automatic return starts `claude -p` from the system scheduler, so the command must be logged in once: run `claude` in a terminal, type `/login`, follow the browser login, then `/exit`. Check with `claude auth status`. Only for this feature: updates work without login.

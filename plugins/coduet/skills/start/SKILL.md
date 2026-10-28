@@ -29,7 +29,7 @@ The user can't see Codex, schedulers or checks. Say what is happening at **every
 | Review | `Coduet · Review of <task>: <merged into X / fixed and merged / sent back to Codex / taken over by me>.` |
 | Codex quota | `Coduet · ⏸ Codex quota used up on <task>. Work so far is kept. Auto-resume at <time>; I check at <time>; if both fail you get a desktop notice at <time>. Nothing for you to do.` |
 | Resume outcome | `Coduet · ↻ Resume of <task>: <completed / still no quota, rescheduled for <time> / failed: <reason>, <what you did>>.` |
-| Claude quota | `Coduet · Claude quota running low: saved the state, <n> tasks handed to Codex, the rest waits for me.` |
+| Claude quota | `Coduet · Claude quota at <n>%: saved the state, lent to Codex <tasks>; I'm back at <time> and take back what hasn't started.` |
 | Update | `Coduet · ⬆ Coduet <new> available (you have <old>): <highlights>.` After updating: `Coduet · Updated to <new>. Open a new session/thread to use it; this one continues on <old>.` |
 | End | `Coduet · ■ Done: <summary>. Codex: <n> tasks, <tokens> tokens.` |
 
@@ -73,6 +73,8 @@ Extra checks: none.
 | Measurements of the Claude check's cost | 3 |
 | Image generation with Codex | yes |
 | Codex spending cap per session (API key only) | none |
+| Claude quota threshold for handoff (%) | 80 |
+| Claude automatic return | off |
 
 Worktree folder: `beside` = `../<project>-codex-<task>`; `inside` = `<project>/.codex-worktrees/<task>` (project folder stays tidy, dependencies like `node_modules` are found from the parent folders). `inside` needs the project's test runners and tools to skip `.codex-worktrees/`: `check-copy --worktree-dir inside` lists configs that don't (`worktree_exclusion=missing:…`); before the first Codex task propose the exclusion for each one (e.g. Vitest `exclude`, Jest `testPathIgnorePatterns`, pytest `norecursedirs`, tsconfig `exclude`) and edit only with the user's ok; without it, use `beside` for this project and say so. `no-config` → check the runners' defaults yourself. Warn once that `git clean -x` in the main copy would delete the worktrees. Italian names (`accanto`/`dentro`) mean the same.
 
@@ -84,7 +86,7 @@ Defaults equal Claude Pro + ChatGPT Plus. Other plans: `reference/profiles.md`. 
 2. **First use**: if `coduet-config` doesn't exist, offer in one line the initial setup (`coduet:settings`, about 2 minutes: plans, phase skills, `claude` command, local folder). If declined, go on with defaults.
 3. **Where you are** (table below) and the Start message.
 4. **Updates** (PC sessions only): run `coduet-update check`. If `update=yes`, follow `reference/updates.md`. If `cli=missing`, also see there. If the check fails, say nothing.
-5. **Pending work** (`~/.coduet/registro.md` from versions before 0.4 is no longer used; ignore it): if the plan's "Codex waiting for quota" isn't "none", or `codex-status` shows tasks, apply `reference/resume.md` § Check first. Remind pending asset approvals (`assets/_bozze/anteprima.html`) and undiscussed improvement proposals in `docs/codex-registro.md`.
+5. **Pending work** (`~/.coduet/registro.md` from versions before 0.4 is no longer used; ignore it): if the plan's "Codex waiting for quota" isn't "none", or `codex-status` shows tasks, apply `reference/resume.md` § Check first. Tasks `lent to Codex`, or a start for Claude's return: `reference/resume.md` § Claude's return. Remind pending asset approvals (`assets/_bozze/anteprima.html`) and undiscussed improvement proposals in `docs/codex-registro.md`.
 6. **Plans not set**: if Claude plan or Codex access are "not set" and `~/.coduet/preferenze.txt` doesn't say `plans: don't ask`, offer once, at a stable moment: "Set now" / "Leave it" / "Don't ask again" (writes that line). Not in cloud sessions.
 
 ### Where you are: which sessions can run Codex
@@ -132,7 +134,7 @@ Load the Plan skill, with these additions:
 - Codex waiting for quota: <task, session id, resume time, check time, or "none">
 - Assets awaiting approval: <list or "none">
 ```
-2. Each task gets `**Executor:** Claude` or `**Executor:** Codex`.
+2. Each task gets `**Executor:** Claude` or `**Executor:** Codex`, and `**Status:** open`. Each Claude task also gets `**Codex-ready:** yes|no` (no for security, secrets and local config, DB migrations) and `**Base branch:**`: scripts lend `yes` tasks to Codex when Claude's quota runs out. A `## Verification commands` section lists the project's checks.
    - **Claude**: architecture, delicate domain logic, security (auth, permissions, secrets, data access), DB migrations, hard debugging, integration, final review, anything needing secrets or local config.
    - **Codex**: repetitive or mechanical work following existing patterns, tests, docs, copy and translations, mechanical refactors, assets, presentations.
    - Apply the delegation rule (`reference/profiles.md` if not the default). "Only assets, tests and docs" → only those. When in doubt, Claude.
@@ -154,7 +156,7 @@ For each Codex task:
    - Windows: `codex-run.ps1 -Project "<folder>" -Task <name> -PromptFile "<file>" -Base <base branch> -Effort <level> -Max <concurrent> -WorktreeDir <beside|inside>`
    - macOS/Linux: `codex-run.sh "<folder>" <name> "<file>" --base <base branch> --effort <level> --max <concurrent> --worktree-dir <beside|inside>`
 
-   The script creates the worktree (path from the Worktree folder parameter) on branch `codex/<task>`, excludes work files from git, records the task in `~/.coduet/tasks/` (the shared registry across projects), runs Codex in workspace-write in a detached process (it keeps running and records its outcome even if this session ends) and ends with one line `CODEX FINISHED task=… status=done|limit|error files=… tokens=… session=… worktree=…`. `CODEX QUEUED` means the concurrent limit is reached: mark the task queued and launch it when one finishes. Effort: `low` trivial, the parameter normally, `high` long or complex.
+   The script creates the worktree (path from the Worktree folder parameter) on branch `codex/<task>`, excludes work files from git, records the task in `~/.coduet/tasks/` (the shared registry across projects), runs Codex in workspace-write in a detached process (it keeps running and records its outcome even if this session ends) and ends with one line `CODEX FINISHED task=… status=done|limit|error files=… tokens=… session=… worktree=…`. `CODEX QUEUED` means the concurrent limit is reached: mark the task queued and launch it when one finishes. `CODEX WAITING … resets_at=<t>` means Codex has no quota: nothing started, go to Step 8. Effort: `low` trivial, the parameter normally, `high` long or complex.
 3. Send "Codex starts", add the task-list item, write session and worktree in the plan.
 4. Meanwhile do Claude's tasks with the execution skill. Don't wait idle.
 5. **Progress**: if a task runs long and you're not doing anything visible, run `codex-status` every 3-5 minutes (use the session's wait/monitor tool if available) and send "Progress" only when something new appears. When the user asks "how is Codex doing?", run `codex-status` and report all tasks.
@@ -175,11 +177,11 @@ Before saying the work is finished, use the Final check skill.
 
 ## Step 7: Claude's quota and handoff
 
-Claude can't see its own quota: the user says so, or limit warnings appear. Launch Codex tasks as soon as they're ready, never at the end: a launched task survives Claude stopping, an unlaunched one waits for the next session. Then: stop at a stable point and update "Status and handoff" in detail; move to Codex only open tasks that meet the Codex criteria (prompt and base branch for each); launch them as in Step 5 (or give the user the ready launch commands if you must stop now); send "Claude quota"; Claude reviews that work when back. When resuming after an interruption: do the start sequence, read the status, check worktrees and `codex/*` branches, review what was done meanwhile, then continue.
+Claude's quota reaches Coduet two ways (set up in `coduet:settings`): a context line `Coduet: Claude quota at <n>%…` (terminal sessions with Coduet's status line) and, at the limit, a hook that lends ready tasks to Codex by script, with no Claude tokens. Launch Codex tasks as soon as they're ready, never at the end. On the context line, on limit warnings, or when the user says so: follow `reference/handoff.md`. When resuming after an interruption: do the start sequence, read the status, check worktrees and `codex/*` branches, review what was done meanwhile, then continue.
 
 ## Step 8: Codex quota used up
 
-With an API key there's no reset: no resume; follow the spending cap. With a ChatGPT account, read `reference/resume.md` and follow it. In short: ask the user (if present) whether to give the tasks to Claude or auto-resume; otherwise auto-resume. Schedule resume and backup notice with `schedule-resume`, schedule Claude's check, update the plan, send "Codex quota".
+With an API key there's no reset: no resume; follow the spending cap. With a ChatGPT account, read `reference/resume.md` and follow it (exact reset times from `codex-limits`). In short: ask the user (if present) whether to give the tasks to Claude or auto-resume; otherwise auto-resume. Schedule resume and backup notice with `schedule-resume`, schedule Claude's check, update the plan, send "Codex quota".
 
 ## Step 9: at the end, improve Coduet
 

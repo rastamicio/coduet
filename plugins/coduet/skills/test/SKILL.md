@@ -21,5 +21,11 @@ Create a task list with the steps below and tick them off. For each step report 
 5. **Completion**: when notified, check the line `CODEX FINISHED … status=done`, that `hello.txt` exists in the worktree, and report tokens. Send the "Codex done" message.
 6. **Asset (cheap)**: ask Codex in the same way for `icon.svg`, a 64×64 SVG with a coloured circle, no image generation. Check the file is valid SVG.
 7. **Resume (simulated)**: schedule with `schedule-resume` a resume of the task's session at now + 2 minutes and the backup notice at now + 4 minutes. Tell the user what will happen. After about 3 minutes (session wait tool, or ask the user to write "go"), read `.codex-ripresa.log` in the worktree: expect `AVVIO` and `COMPLETATO`. Then append the line `<now> CONTROLLO CLAUDE test` so the backup notice stays silent, and say so. To also see the notice window, the user can ask to skip that line.
-8. **Clean up**: with the user's ok, remove the worktree, the `coduet-test` folder, the test task files in `~/.coduet/tasks/` and any leftover scheduled tasks (`Coduet-*`).
-9. **Summary**: a table step → ✓/✗ → note, total Codex tokens, and for each ✗ the likely fix. Offer a ready-to-send issue text (general, no personal paths) for the plugin repository if something in Coduet itself failed.
+8. **Quotas (no real limit needed)**, in `coduet-test`:
+   - `codex-limits`: expect `ok=1` and both percentages.
+   - Copy a plan with `## Status and handoff`, a `PC copy:` line and one task (`Executor: Claude`, `Codex-ready: yes`, `Status: open`, base branch `main`, goal: create `lent.txt`) into `coduet-test/docs/plan.md`.
+   - `claude-quota-check`: write a fake `~/.coduet/claude-quota.json` (five_hour at 85%, `resets_at` in one hour; back up an existing file first and restore it after) and pipe `{"cwd":"<coduet-test>"}` to the script: expect one `Coduet: Claude quota at 85%` line, then nothing on a second run.
+   - `claude-limit-hit`: pipe `{"cwd":"<coduet-test>","error_type":"rate_limit"}`: expect the task `lent to Codex` in the plan, a Codex run for `task1` and a desktop notice. Wait for it like step 5.
+   - `schedule-claude-return <coduet-test> --dry-run`: expect `when=` and the command (or `error=not-logged-in`, fine if the return is off).
+9. **Clean up**: with the user's ok, remove the worktrees, the `coduet-test` folder, the test task files in `~/.coduet/tasks/`, the test files `~/.coduet/claude-limit-coduet-test.*` and `claude-quota-warned.txt`, and any leftover scheduled tasks (`Coduet-*`).
+10. **Summary**: a table step → ✓/✗ → note, total Codex tokens, and for each ✗ the likely fix. Offer a ready-to-send issue text (general, no personal paths) for the plugin repository if something in Coduet itself failed.
