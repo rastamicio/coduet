@@ -1,0 +1,3 @@
+#!/usr/bin/env bash
+# Test notifier: appends the message to $NOTIFY_FILE.
+echo "$*" >> "$NOTIFY_FILE"

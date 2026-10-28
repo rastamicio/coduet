@@ -150,3 +150,26 @@ function Claude-ReturnArgs {
   $tools = "Bash(powershell -NoProfile -ExecutionPolicy Bypass -File $s\:*),Bash(git status:*),Bash(git diff:*),Bash(git log:*),Bash(git add:*),Bash(git commit:*),Bash(git merge:*),Bash(git worktree:*),Bash(git fetch:*),Bash(git push),Read,Edit,Write,Grep,Glob"
   return "-p `"Use the coduet:start skill: resume after Claude's quota reset.`" --permission-mode acceptEdits --allowedTools `"$tools`""
 }
+
+# True if a yes/no parameter is switched on in .coduet.md or the personal coduet-config.
+function Coduet-ParamOn([string]$root, [string]$regex) {
+  foreach ($f in @((Join-Path $root '.coduet.md'), (Join-Path $env:USERPROFILE '.claude\skills\coduet-config\SKILL.md'))) {
+    if (-not (Test-Path -LiteralPath $f)) { continue }
+    $l = Get-Content -LiteralPath $f -Encoding UTF8 | Where-Object { $_ -match $regex } | Select-Object -Last 1
+    if ($l) { return [bool]($l -match '\|\s*(on|yes|sì|si|attivo|attiva)\s*\|') }
+  }
+  return $false
+}
+function Coduet-ParamWord([string]$root, [string]$regex, [string]$words, [string]$default) {
+  foreach ($f in @((Join-Path $root '.coduet.md'), (Join-Path $env:USERPROFILE '.claude\skills\coduet-config\SKILL.md'))) {
+    if (-not (Test-Path -LiteralPath $f)) { continue }
+    $l = Get-Content -LiteralPath $f -Encoding UTF8 | Where-Object { $_ -match $regex } | Select-Object -Last 1
+    if ($l -and $l -match "\|\s*($words)\s*\|") { return $Matches[1].ToLower() }
+  }
+  return $default
+}
+# Desktop notice that doesn't block the caller ($env:CODUET_NOTIFY overrides, for tests).
+function Notify([string]$msg) {
+  if ($env:CODUET_NOTIFY) { & $env:CODUET_NOTIFY $msg; return }
+  Start-Process powershell.exe -WindowStyle Hidden -ArgumentList '-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', "`"$(Join-Path $PSScriptRoot 'notify.ps1')`"", '-Message', "`"$($msg -replace '"', "'")`""
+}

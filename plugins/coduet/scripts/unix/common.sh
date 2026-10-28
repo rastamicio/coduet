@@ -156,3 +156,21 @@ claude_return_cmd() { # claude-path
     "Use the coduet:start skill: resume after Claude's quota reset." \
     "Bash(bash $s/:*),Bash(git status:*),Bash(git diff:*),Bash(git log:*),Bash(git add:*),Bash(git commit:*),Bash(git merge:*),Bash(git worktree:*),Bash(git fetch:*),Bash(git push),Read,Edit,Write,Grep,Glob"
 }
+
+# True if a yes/no parameter is switched on in .coduet.md or the personal coduet-config.
+coduet_param_on() { # project-root regex
+  local f l
+  for f in "$1/.coduet.md" "$HOME/.claude/skills/coduet-config/SKILL.md"; do
+    [ -f "$f" ] || continue
+    l="$(grep -Ei "$2" "$f" | tail -n 1)"
+    [ -n "$l" ] && { echo "$l" | grep -Eqi '\| *(on|yes|sì|si|attivo|attiva) *\|'; return; }
+  done
+  return 1
+}
+# Desktop notice that doesn't block (CODUET_NOTIFY overrides, for tests).
+notify() { # message
+  if [ -n "$CODUET_NOTIFY" ]; then "$CODUET_NOTIFY" "$1"
+  elif command -v osascript >/dev/null 2>&1; then osascript -e "display notification \"${1//\"/\\\"}\" with title \"Coduet\"" >/dev/null 2>&1
+  elif command -v notify-send >/dev/null 2>&1; then notify-send "Coduet" "$1"
+  else { echo "$1" >> "$HOME/Desktop/coduet-avviso.txt"; } 2>/dev/null || echo "$1" >> "$HOME/coduet-avviso.txt"; fi
+}
