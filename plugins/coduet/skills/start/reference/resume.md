@@ -23,8 +23,8 @@ Reset time from the error in `.codex-output.txt`; if missing, ask the user (`/st
 - Windows: `schedule-resume.ps1 -Worktree "<wt>" -Task <name> -Session <id> -ResumeAt "yyyy-MM-dd HH:mm" -WarnAt "yyyy-MM-dd HH:mm" -Effort <level>` (Task Scheduler: starts late if the PC was off, wakes it from sleep, removes itself).
 - macOS/Linux: `schedule-resume.sh "<wt>" <name> <id> "YYYY-MM-DD HH:MM" "YYYY-MM-DD HH:MM" <level>` (`at`, systemd or launchd).
 - Each line `scheduled=… when=…` is ok; `error=` → tell the user right away and give the manual command:
-  `cd "<wt>" && codex exec resume <id> -c sandbox_mode="workspace-write" -c model_reasoning_effort="<level>" -o .codex-esito.md "Continue the task from where you stopped. Do not commit. At the end write a summary."`
-  (`resume` has no `--sandbox`/`--cd`: run it inside the worktree; always use the session id, never `--last`.)
+  `cd "<wt>" && codex exec resume <id> -c sandbox_mode="workspace-write" -c model_reasoning_effort="<level>" -o .codex-esito.md "Continue the task from where you stopped. Do not commit. At the end write a summary." < /dev/null`
+  (`resume` has no `--sandbox`/`--cd`: run it inside the worktree; always use the session id, never `--last`; keep stdin closed (`< NUL` in cmd), or Codex waits forever when no terminal is attached.)
 - **Claude check**: create a scheduled task with the session's scheduling tool that survives this session (not session-only cron). Prompt:
   "Project in <project path>. Use the coduet:start skill, reference/resume.md § Check, for the Codex task '<name>' in worktree <wt> (session <id>). First append to <wt>/.codex-ripresa.log the line '<date time> CONTROLLO CLAUDE start'; at the end '<date time> CONTROLLO CLAUDE end' with what you did."
   No suitable tool: ask the user to create it from the desktop app with that prompt.
