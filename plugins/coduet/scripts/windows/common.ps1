@@ -126,3 +126,20 @@ function Plan-SetStatus([string]$plan, [string]$n, [string]$status) {
   }
   [IO.File]::WriteAllLines($plan, [string[]]$lines, (New-Object Text.UTF8Encoding $false))
 }
+
+# Value of a parameter from the project's .coduet.md, else the personal coduet-config, else the default.
+# The parameter line is matched by a regex (names may be translated); the value is the last number on it.
+function Coduet-Param([string]$root, [string]$regex, [string]$default) {
+  foreach ($f in @((Join-Path $root '.coduet.md'), (Join-Path $env:USERPROFILE '.claude\skills\coduet-config\SKILL.md'))) {
+    if (-not (Test-Path -LiteralPath $f)) { continue }
+    $l = Get-Content -LiteralPath $f -Encoding UTF8 | Where-Object { $_ -match $regex } | Select-Object -Last 1
+    if ($l) { $n = [regex]::Matches($l, '\d+'); if ($n.Count) { return $n[$n.Count - 1].Value } }
+  }
+  return $default
+}
+# Local HH:mm of a Unix time.
+function HHmm([long]$unix) { ([DateTimeOffset]::FromUnixTimeSeconds($unix)).LocalDateTime.ToString('HH:mm') }
+function Repo-Root([string]$dir) {
+  $r = git -C $dir rev-parse --show-toplevel 2>$null
+  if ($LASTEXITCODE -eq 0 -and $r) { return ($r -replace '/', '\') } else { return $dir }
+}

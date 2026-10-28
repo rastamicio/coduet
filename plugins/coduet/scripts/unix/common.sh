@@ -104,3 +104,21 @@ plan_set_status() { # plan N status
     { print }' "$1" > "$tmp" && cat "$tmp" > "$1"
   rm -f "$tmp"
 }
+
+# Value of a parameter from the project's .coduet.md, else the personal coduet-config, else the default.
+# The parameter line is matched by an extended regex (names may be translated); the value is the last number on it.
+coduet_param() { # project-root regex default
+  local f v
+  for f in "$1/.coduet.md" "$HOME/.claude/skills/coduet-config/SKILL.md"; do
+    [ -f "$f" ] || continue
+    v="$(grep -Ei "$2" "$f" | tail -n 1 | grep -Eo '[0-9]+' | tail -n 1)"
+    [ -n "$v" ] && { echo "$v"; return; }
+  done
+  echo "$3"
+}
+# Hook input: prints the value of a top-level string field ("cwd", "error_type", ...).
+hook_field() { # json field
+  printf '%s' "$1" | sed -n "s/.*\"$2\"[[:space:]]*:[[:space:]]*\"\([^\"]*\)\".*/\1/p" | head -n 1
+}
+# Local HH:MM of a Unix time.
+hhmm() { date -d "@$1" '+%H:%M' 2>/dev/null || date -r "$1" '+%H:%M'; }
