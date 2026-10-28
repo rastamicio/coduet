@@ -36,4 +36,12 @@ Set-Content (Join-Path $r '.coduet.md') "| Parameter | Value |`n|---|---|`n| Cla
 Quota 85 10 1793180000
 Assert-Eq '|code=0' (Run $r) '.coduet.md threshold 90: silent at 85%'
 
+# Claude Code sends UTF-8: a folder name outside ASCII must still be found.
+$OutputEncoding = New-Object Text.UTF8Encoding $false
+$u = Join-Path $env:TEMP ('coduet-qu-' + [guid]::NewGuid().ToString('N') + "\citt$([char]0x00E0)"); New-Item -ItemType Directory -Force (Join-Path $u 'docs') | Out-Null; git -C $u init -q -b main
+Copy-Item (Join-Path $Fixtures 'plan-new.md') (Join-Path $u 'docs\plan.md')
+Remove-Item (Join-Path $env:CODUET_HOME 'claude-quota-warned.txt') -ErrorAction SilentlyContinue
+Quota 85 10 1793190000
+Assert-Contains (Run $u) 'Claude quota at 85%' 'non-ASCII folder: warning'
+
 Finish 'quota-check.Tests.ps1'

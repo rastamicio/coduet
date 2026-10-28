@@ -20,7 +20,7 @@ if (-not $At) {
   $At = $t.AddMinutes([int](Coduet-Param $Project 'Resume margin|margine.*ripresa' '5')).ToString('yyyy-MM-dd HH:mm')
 }
 "when=$At"
-if ($DryRun) { "command=`"$cl`" $(Claude-ReturnArgs)"; exit 0 }
+if ($DryRun) { "command=`"$cl`" $(Claude-ReturnArgs $Project)"; exit 0 }
 $token = [guid]::NewGuid().ToString('N')
 Set-Content -Path (Join-Path $CoduetHome "claude-return-$name.token") -Value $token
 $safe = $name -replace '[^A-Za-z0-9_-]', '_'

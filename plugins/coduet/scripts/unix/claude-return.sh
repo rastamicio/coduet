@@ -8,5 +8,5 @@ LOG="$CODUET_HOME/claude-return-$NAME.log"
 CL="$(find_claude)"; [ -n "$CL" ] || { echo "$(now_iso) ERROR no claude" >> "$LOG"; exit 1; }
 echo "$(now_iso) START" >> "$LOG"
 cd "$PROJECT" || exit 1
-eval "$(claude_return_cmd "$CL")" < /dev/null >> "$LOG" 2>&1
-echo "$(now_iso) END exit=$?" >> "$LOG"
+eval "$(claude_return_cmd "$CL" "$PROJECT")" < /dev/null >> "$LOG" 2>&1
+RC=$?; echo "$(now_iso) END exit=$RC" >> "$LOG"

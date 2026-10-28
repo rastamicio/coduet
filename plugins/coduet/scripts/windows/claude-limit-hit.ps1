@@ -1,6 +1,7 @@
 # StopFailure hook (rate_limit): Claude hit its usage limit. Without spending Claude tokens, lends the plan's ready
 # Claude tasks to Codex (if Codex has quota), schedules Claude's return and tells the user. Silent outside Coduet projects.
 . (Join-Path $PSScriptRoot 'common.ps1')
+[Console]::InputEncoding = New-Object Text.UTF8Encoding $false
 $in = [Console]::In.ReadToEnd()
 $j = $null; try { $j = $in | ConvertFrom-Json } catch { exit 0 }
 # Claude Code puts the error type in "error" ("error_type" in some versions).
@@ -37,12 +38,14 @@ if ($av -ne 'no') {
     $p = Join-Path $pd "$name-task$n.md"; $out = Join-Path $pd "$name-task$n.out"
     $null = & powershell -NoProfile -ExecutionPolicy Bypass -File (Join-Path $PSScriptRoot 'handoff-prompt.ps1') -Plan $plan -Task $n -Out $p
     if (Test-Path $out) { Remove-Item $out }
-    $a = "-NoProfile -ExecutionPolicy Bypass -File `"$(Join-Path $PSScriptRoot 'codex-run.ps1')`" -Project `"$root`" -Task task$n -PromptFile `"$p`" -Base `"$base`" -Effort $effort -Max $max -WorktreeDir $wtd"
+    # Recorded before the launch: a task must never look open while Codex may be running it.
+    Plan-SetStatus $plan $n 'lent to Codex'
+    $a = "-NoProfile -ExecutionPolicy Bypass -File `"$(Join-Path $PSScriptRoot 'codex-run.ps1')`" -Project `"$root`" -Task task$n -PromptFile `"$p`" -Base `"$base`" -Effort $effort -Max $max -WorktreeDir $wtd -SkipQuotaCheck"
     Start-Process powershell.exe -ArgumentList $a -WindowStyle Hidden -RedirectStandardOutput $out | Out-Null
-    for ($i = 0; $i -lt 50 -and -not ((Test-Path $out) -and (Get-Item $out).Length -gt 0); $i++) { Start-Sleep -Milliseconds 200 }
-    $first = if (Test-Path $out) { Get-Content $out -TotalCount 1 } else { '' }
-    Log "Task ${n}: $first"
-    if ($first -like 'CODEX STARTED*') { Plan-SetStatus $plan $n 'lent to Codex'; $lent += "Task $n" }
+    for ($i = 0; $i -lt 150 -and -not ((Test-Path $out) -and (Get-Item $out).Length -gt 0); $i++) { Start-Sleep -Milliseconds 200 }
+    $first = if (Test-Path $out) { [string](Get-Content $out -TotalCount 1) } else { '' }
+    Log "Task ${n}: $(if ($first) { $first } else { 'no answer yet, kept as lent' })"
+    if ($first -match '^CODEX (QUEUED|WAITING|ERROR)') { Plan-SetStatus $plan $n 'open' } else { $lent += "Task $n" }
   }
 }
 

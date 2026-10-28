@@ -36,17 +36,19 @@ if [ "$AV" -ne 1 ]; then
     [ -n "$N" ] || continue
     P="$CODUET_HOME/prompts/$NAME-task$N.md"; bash "$D/handoff-prompt.sh" "$PLAN" "$N" "$P" > /dev/null
     OUT="$CODUET_HOME/prompts/$NAME-task$N.out"
-    nohup bash "$D/codex-run.sh" "$ROOT" "task$N" "$P" --base "${BASE:-HEAD}" --effort "${EFFORT:-medium}" --max "$MAX" --worktree-dir "$WTD" \
-      < /dev/null > "$OUT" 2>&1 &
-    for _ in $(seq 1 50); do [ -s "$OUT" ] && break; sleep 0.2; done
-    FIRST="$(head -n 1 "$OUT")"; echo "$(now_iso) Task $N: $FIRST" >> "$LOG"
-    case "$FIRST" in "CODEX STARTED"*) plan_set_status "$PLAN" "$N" "lent to Codex"; LENT+=("Task $N") ;; esac
+    # Recorded before the launch: a task must never look open while Codex may be running it.
+    plan_set_status "$PLAN" "$N" "lent to Codex"
+    nohup bash "$D/codex-run.sh" "$ROOT" "task$N" "$P" --base "${BASE:-HEAD}" --effort "${EFFORT:-medium}" --max "$MAX" \
+      --worktree-dir "$WTD" --skip-quota-check < /dev/null > "$OUT" 2>&1 &
+    for _ in $(seq 1 150); do [ -s "$OUT" ] && break; sleep 0.2; done
+    FIRST="$(head -n 1 "$OUT")"; echo "$(now_iso) Task $N: ${FIRST:-no answer yet, kept as lent}" >> "$LOG"
+    case "$FIRST" in "CODEX QUEUED"*|"CODEX WAITING"*|"CODEX ERROR"*) plan_set_status "$PLAN" "$N" "open" ;; *) LENT+=("Task $N") ;; esac
   done < <(plan_lendable "$PLAN")
 fi
 
 if [ ${#LENT[@]} -gt 0 ]; then
   LIST="$(IFS=,; echo "${LENT[*]}" | sed 's/,/, /g')"
-  awk -v line="- Lent to Codex at $(date '+%Y-%m-%d %H:%M'): $LIST" '{ print } /^## Status and handoff/ { print line }' "$PLAN" > "$PLAN.tmp" && cat "$PLAN.tmp" > "$PLAN"; rm -f "$PLAN.tmp"
+  awk -v line="- Lent to Codex at $(date '+%Y-%m-%d %H:%M'): $LIST" '{ print } /^## Status and handoff/ { print line }' "$PLAN" > "$PLAN.tmp" && mv -f "$PLAN.tmp" "$PLAN"
 fi
 
 RET=''

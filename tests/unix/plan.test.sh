@@ -28,5 +28,8 @@ assert_contains "$txt" "Implement Task 1 (Parser for the config file) of the pla
 assert_contains "$txt" "Do not commit." "handoff: rules"
 assert_contains "$txt" "(.env and similar)" "handoff: secrets rule"
 assert_contains "$txt" "npm run lint" "handoff: verification commands"
+assert_contains "$txt" "**Base branch:** feature/config" "handoff: task block inlined"
+assert_contains "$txt" "- [ ] Step 1: write the test" "handoff: task steps inlined"
+assert_not_contains "$txt" "Token refresh" "handoff: other tasks not inlined"
 
 finish

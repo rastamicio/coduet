@@ -45,4 +45,14 @@ sleep 1
 cmp -s "$FIXTURES/plan-old.md" "$R/docs/plan.md"; assert_eq 0 $? "old plan: file unchanged"
 assert_eq "" "$(cat "$M")" "old plan: nothing launched"
 
+R="$(new_repo plan-new.md)"; : > "$M"; rm -f "$CODUET_HOME"/claude-limit-*.txt
+FAKE_CODEX_MODE=slow hit "$R" rate_limit
+sleep 1
+assert_contains "$(cat "$R/docs/plan.md")" "**Status:** lent to Codex" "slow app-server: task recorded as lent"
+assert_eq 1 "$(grep -c '^exec' "$M")" "slow app-server: codex launched once"
+rm -f "$CODUET_HOME"/claude-limit-*.txt
+FAKE_CODEX_MODE=ok hit "$R" rate_limit
+sleep 1
+assert_eq 1 "$(grep -c '^exec' "$M")" "slow app-server: not launched again by a later hit"
+
 finish

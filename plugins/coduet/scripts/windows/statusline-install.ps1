@@ -9,7 +9,11 @@ $dest = Join-Path $CoduetHome 'claude-statusline.ps1'
 $cmd = "powershell -NoProfile -ExecutionPolicy Bypass -File `"$dest`""
 $utf8 = New-Object Text.UTF8Encoding $false
 
-$d = if (Test-Path $s) { Get-Content $s -Raw -Encoding UTF8 | ConvertFrom-Json } else { New-Object PSObject }
+$d = New-Object PSObject
+if (Test-Path $s) {
+  try { $d = [IO.File]::ReadAllText($s) | ConvertFrom-Json -ErrorAction Stop } catch { $d = $null }
+  if ($d -isnot [pscustomobject]) { 'error=invalid-settings'; exit 1 }
+}
 $cur = if ($d.PSObject.Properties['statusLine'] -and $d.statusLine.command) { [string]$d.statusLine.command } else { '' }
 function Save { [IO.File]::WriteAllText($s, ($d | ConvertTo-Json -Depth 20), $utf8) }
 function Kind { if ($cur -like '*claude-statusline*') { 'coduet' } elseif ($cur) { 'other' } else { 'none' } }

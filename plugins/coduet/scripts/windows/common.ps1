@@ -8,7 +8,8 @@ New-Item -ItemType Directory -Force -Path $CoduetTasks | Out-Null
 function Now-Iso { (Get-Date).ToString('yyyy-MM-ddTHH:mm:ss') }
 
 function Find-Claude {
-  $c = Get-Command claude -ErrorAction SilentlyContinue
+  # Only programs cmd can start (claude.exe/.cmd), never claude.ps1.
+  $c = Get-Command claude -CommandType Application -ErrorAction SilentlyContinue | Where-Object { $_.Extension -in '.exe', '.cmd', '.bat' } | Select-Object -First 1
   if ($c) { return $c.Source }
   $p = Join-Path $env:USERPROFILE '.local\bin\claude.exe'
   if (Test-Path $p) { return $p }
@@ -144,11 +145,27 @@ function Repo-Root([string]$dir) {
   if ($LASTEXITCODE -eq 0 -and $r) { return ($r -replace '/', '\') } else { return $dir }
 }
 
-# Arguments that restart Claude in a project after its quota resets (headless, limited permissions).
-function Claude-ReturnArgs {
+# Arguments that restart Claude in a project after its quota resets (headless, limited permissions): Coduet's scripts
+# (quoted or not, either slash), read-only git, commit/merge/push without force, worktree list/add/remove, the plan's checks.
+function Claude-ReturnArgs([string]$project) {
   $s = Join-Path $PluginRoot 'scripts\windows'
-  $tools = "Bash(powershell -NoProfile -ExecutionPolicy Bypass -File $s\:*),Bash(git status:*),Bash(git diff:*),Bash(git log:*),Bash(git add:*),Bash(git commit:*),Bash(git merge:*),Bash(git worktree:*),Bash(git fetch:*),Bash(git push),Read,Edit,Write,Grep,Glob"
-  return "-p `"Use the coduet:start skill: resume after Claude's quota reset.`" --permission-mode acceptEdits --allowedTools `"$tools`""
+  $ps = 'powershell -NoProfile -ExecutionPolicy Bypass -File'
+  $t = @()
+  foreach ($p in @("$s\", (($s -replace '\\', '/') + '/'))) { $t += "Bash($ps `"$($p):*)"; $t += "Bash($ps $($p):*)" }
+  $t += 'Bash(git status:*)', 'Bash(git diff:*)', 'Bash(git log:*)', 'Bash(git add:*)', 'Bash(git commit:*)', 'Bash(git merge:*)',
+    'Bash(git worktree list:*)', 'Bash(git worktree add:*)', 'Bash(git worktree remove:*)', 'Bash(git fetch:*)', 'Bash(git push)'
+  $plan = if ($project) { Find-CoduetPlan $project } else { '' }
+  if ($plan) {
+    $in = $false
+    foreach ($l in Get-Content -LiteralPath $plan -Encoding UTF8) {
+      if ($l -match '^## Verification commands') { $in = $true; continue }
+      if ($l -match '^#') { $in = $false }
+      if ($in -and $l.Trim()) { $t += "Bash($($l.Trim()))"; $t += "Bash($($l.Trim()):*)" }
+    }
+  }
+  $t += 'Read', 'Edit', 'Write', 'Grep', 'Glob'
+  # Inner double quotes escaped as \" for claude's command line.
+  return "-p `"Use the coduet:start skill: resume after Claude's quota reset.`" --permission-mode acceptEdits --allowedTools `"$(($t -join ',') -replace '"', '\"')`""
 }
 
 # True if a yes/no parameter is switched on in .coduet.md or the personal coduet-config.

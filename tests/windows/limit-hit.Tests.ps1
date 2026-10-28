@@ -46,4 +46,12 @@ $env:FAKE_CODEX_MODE = 'ok'; Hit $r 'rate_limit'; Start-Sleep -Seconds 2
 Assert-Eq $true (Same (Join-Path $Fixtures 'plan-old.md') (Join-Path $r 'docs\plan.md')) 'old plan: file unchanged'
 Assert-Eq 0 (Execs) 'old plan: nothing launched'
 
+$r = New-Repo 'plan-new.md'; Remove-Item (Join-Path $env:CODUET_HOME 'claude-limit-*.txt')
+$env:FAKE_CODEX_MODE = 'slow'; Hit $r 'rate_limit'; Start-Sleep -Seconds 3
+Assert-Contains (Get-Content (Join-Path $r 'docs\plan.md') -Raw) '**Status:** lent to Codex' 'slow app-server: task recorded as lent'
+Assert-Eq 1 (Execs) 'slow app-server: codex launched once'
+Remove-Item (Join-Path $env:CODUET_HOME 'claude-limit-*.txt')
+$env:FAKE_CODEX_MODE = 'ok'; Hit $r 'rate_limit'; Start-Sleep -Seconds 2
+Assert-Eq 1 (Execs) 'slow app-server: not launched again by a later hit'
+
 Finish 'limit-hit.Tests.ps1'

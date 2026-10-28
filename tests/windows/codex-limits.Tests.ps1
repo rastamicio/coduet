@@ -24,8 +24,11 @@ Assert-Eq $true ($el -lt 8) "silent: ends quickly (took $el s)"
 Start-Sleep -Milliseconds 500
 Assert-Eq 0 (Leftover) 'silent: no process left'
 
-$env:FAKE_CODEX_MODE = 'noserver'; $out = Run-Script 'codex-limits.ps1' @('-TimeoutSec', '3')
+$env:FAKE_CODEX_MODE = 'noserver'; $t = Get-Date; $out = Run-Script 'codex-limits.ps1' @('-TimeoutSec', '15')
+$el = ((Get-Date) - $t).TotalSeconds
 Assert-Contains $out 'ok=0' 'noserver: ok=0'
+Assert-Contains $out 'error=app-server-exited' 'noserver: error'
+Assert-Eq $true ($el -lt 10) "noserver: doesn't wait for the timeout (took $el s)"
 Assert-Eq 'unknown' (Codex-Available ($out -split "`n")) 'noserver: Codex-Available'
 
 Finish 'codex-limits.Tests.ps1'

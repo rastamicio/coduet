@@ -1,7 +1,8 @@
 . (Join-Path $PSScriptRoot 'lib.ps1')
 $env:PATH = "$Fixtures;$env:PATH"
 $env:USERPROFILE = Join-Path $env:TEMP ('coduet-home-' + [guid]::NewGuid().ToString('N')); New-Item -ItemType Directory $env:USERPROFILE | Out-Null
-$r = Join-Path $env:TEMP ('coduet-cr-' + [guid]::NewGuid().ToString('N') + '\proj'); New-Item -ItemType Directory -Force $r | Out-Null; git -C $r init -q -b main
+$r = Join-Path $env:TEMP ('coduet-cr-' + [guid]::NewGuid().ToString('N') + '\proj'); New-Item -ItemType Directory -Force (Join-Path $r 'docs') | Out-Null; git -C $r init -q -b main
+Copy-Item (Join-Path $Fixtures 'plan-new.md') (Join-Path $r 'docs\plan.md')
 function When-Of([string]$o) { ($o -split "`n" | Where-Object { $_ -like 'when=*' }) -replace '^when=', '' }
 $q = Join-Path $env:CODUET_HOME 'claude-quota.json'
 
@@ -13,6 +14,12 @@ Assert-Contains $out '--permission-mode acceptEdits' 'command: permission mode'
 Assert-Contains $out 'coduet:start' 'command: resume prompt'
 Assert-NotContains $out '--force' 'command: no force'
 Assert-NotContains $out '--dangerously' 'command: no dangerous mode'
+$ps = 'powershell -NoProfile -ExecutionPolicy Bypass -File'
+Assert-Contains $out "Bash($ps \`"$Scripts\:*)" 'command: quoted script path allowed'
+Assert-Contains $out "Bash($ps $Scripts\:*)" 'command: unquoted script path allowed'
+Assert-Contains $out "Bash($ps $($Scripts -replace '\\', '/')/:*)" 'command: script path with / allowed'
+Assert-Contains $out 'Bash(npm test)' 'command: plan verification commands allowed'
+Assert-NotContains $out 'Bash(git worktree:*)' 'command: git worktree narrowed'
 
 (Get-Item $q).LastWriteTime = (Get-Date).AddHours(-6)
 $out = Run-Script 'schedule-claude-return.ps1' @('-Project', $r, '-DryRun')

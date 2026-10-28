@@ -29,11 +29,26 @@ function Out-Window($name, $w) {
   else { "${name}_used="; "${name}_resets_at="; "${name}_window_mins=" }
 }
 
+# ping keeps the cmd alive, so the cmd can't tell us app-server ended: look for any live descendant besides cmd, ping, conhost.
+function Server-Alive($rootId) {
+  $all = @(Get-CimInstance Win32_Process -Property ProcessId, ParentProcessId, Name -ErrorAction SilentlyContinue)
+  $ids = @($rootId); $i = 0
+  while ($i -lt $ids.Count) {
+    foreach ($c in $all) {
+      if ($c.ParentProcessId -ne $ids[$i] -or $ids -contains $c.ProcessId) { continue }
+      if ($c.Name -notin @('cmd.exe', 'PING.EXE', 'ping.exe', 'conhost.exe')) { return $true }
+      $ids += $c.ProcessId
+    }
+    $i++
+  }
+  return $false
+}
+
 $proc = $null
 try {
   $proc = Start-Process -FilePath $env:ComSpec -ArgumentList $cmdLine -WindowStyle Hidden -PassThru
   $deadline = (Get-Date).AddSeconds($TimeoutSec)
-  $r = $null
+  $r = $null; $gone = $false; $nextCheck = (Get-Date).AddSeconds(1.5)
   while ((Get-Date) -lt $deadline -and -not $r) {
     Start-Sleep -Milliseconds 200
     if (-not (Test-Path $outFile)) { continue }
@@ -45,7 +60,10 @@ try {
       if ($msg.PSObject.Properties['error'] -and $msg.error) { throw "$($msg.error.message)" }
       $r = $msg.result
     }
-    if ($proc.HasExited -and -not $r) { throw 'app-server-exited' }
+    # One more read after the server is gone: its last line may have landed after this pass read the file.
+    if (-not $r -and $gone) { throw 'app-server-exited' }
+    if (-not $r) { $gone = $proc.HasExited -or ((Get-Date) -gt $nextCheck -and -not (Server-Alive $proc.Id)) }
+    if ((Get-Date) -gt $nextCheck) { $nextCheck = (Get-Date).AddSeconds(1) }
   }
   if (-not $r) { throw 'timeout' }
   $rl = $r.rateLimits

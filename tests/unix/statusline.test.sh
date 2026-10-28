@@ -44,4 +44,9 @@ bash "$SCRIPTS/statusline-install.sh" install > /dev/null
 bash "$SCRIPTS/statusline-install.sh" uninstall > /dev/null
 assert_eq '{"model": "opus"}' "$(python3 -c 'import json,sys; print(json.dumps(json.load(open(sys.argv[1]))))' "$HOME/.claude/settings.json")" "no previous: key removed"
 
+printf '' > "$HOME/.claude/settings.json"
+out="$(bash "$SCRIPTS/statusline-install.sh" install)"
+assert_contains "$out" "error=invalid-settings" "invalid settings: error line"
+assert_eq "" "$(cat "$HOME/.claude/settings.json")" "invalid settings: file untouched"
+
 finish

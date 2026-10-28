@@ -12,7 +12,11 @@ json() { # python code with d = settings dict; args after
     python3 - "$S" "$@" <<PY
 import json, os, sys
 p = sys.argv[1]; a = sys.argv[2:]
-d = json.load(open(p, encoding="utf-8")) if os.path.exists(p) else {}
+try:
+    d = json.load(open(p, encoding="utf-8")) if os.path.exists(p) else {}
+    assert isinstance(d, dict)
+except Exception:
+    print("error=invalid-settings"); sys.exit(2)
 $code
 PY
   else echo "error=no-json-tool"; return 2; fi
@@ -23,6 +27,7 @@ tmp = p + ".tmp"
 json.dump(d, open(tmp, "w", encoding="utf-8"), indent=2, ensure_ascii=False); os.replace(tmp, p)' "${@:2}"; }
 
 cur="$(current)" || { echo "$cur"; exit 1; }
+case "$cur" in error=*) echo "$cur"; exit 1 ;; esac
 case "$1" in
   status)
     case "$cur" in *claude-statusline*) echo "statusline=coduet" ;; '') echo "statusline=none" ;; *) echo "statusline=other" ;; esac ;;

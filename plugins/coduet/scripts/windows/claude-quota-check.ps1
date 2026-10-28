@@ -1,6 +1,7 @@
 # UserPromptSubmit hook: one line of context for Claude when its quota passes the handoff threshold, once per window.
 # Silent (and free) otherwise, and outside Coduet projects.
 . (Join-Path $PSScriptRoot 'common.ps1')
+[Console]::InputEncoding = New-Object Text.UTF8Encoding $false
 $in = [Console]::In.ReadToEnd()
 $cwd = ''; try { $cwd = ($in | ConvertFrom-Json).cwd } catch { }
 if (-not $cwd) { $cwd = (Get-Location).Path }

@@ -5,7 +5,7 @@ Scripts are in the plugin's `scripts/windows|unix` folder (see the core skill). 
 ## At the threshold (context line `Coduet: Claude quota at <n>%…`)
 
 1. Reach a stable point; update "Status and handoff" in detail (precise next step).
-2. List open Claude tasks with `Codex-ready: yes` (and Codex tasks not launched yet). Ask with a multiple-choice question: "Lend <n> tasks to Codex (<list>)?" — Yes (recommended) / Only some / No, I'll go on.
+2. List open Claude tasks with `Codex-ready: yes` (and Codex tasks not launched yet). Plans without `Codex-ready` lines: judge open tasks by the Codex criteria, as before. Ask with a multiple-choice question: "Lend <n> tasks to Codex (<list>)?" — Yes (recommended) / Only some / No, I'll go on.
 3. **Timeout**: before asking, launch in the background a command that waits 5 minutes (`Start-Sleep 300` / `sleep 300`). If it ends before the user answers, go on with "Yes" and say so. If the session can't be woken by a background command, or the question blocks without a timeout, write the question as text, lend the tasks right away and say the user can take them back by writing "riprendi i task".
 4. For each task: `handoff-prompt <plan> <N> <file>`, then `codex-run` as in Step 5 (task name `task<N>`, base branch from the plan). `CODEX STARTED` → set `**Status:** lent to Codex`; `CODEX QUEUED`/`CODEX WAITING` → leave it open. Add `- Lent to Codex at <time>: <tasks>` under "Status and handoff".
 5. Codex without quota (`codex-limits`): lend nothing; each resumes its own tasks after its reset.

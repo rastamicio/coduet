@@ -15,9 +15,10 @@ $null = Run-SL '{"model":{"display_name":"Opus"}}'
 Assert-Eq '{"stale":1}' (Get-Content $q -Raw).Trim() 'no rate_limits: file untouched'
 
 $p = Join-Path $env:CODUET_HOME 'statusline-prev.txt'
-Set-Content $p 'echo prev "ok"' -NoNewline
+# Run with Git Bash, as Claude Code does.
+Set-Content $p 'printf ''%s\n'' "prev \"ok\""' -NoNewline
 Assert-Eq 'prev "ok"' (Run-SL $j) 'prev: output identical'
-Set-Content $p 'findstr /c:"cwd"' -NoNewline
+Set-Content $p 'cat' -NoNewline
 Assert-Contains (Run-SL $j) '"cwd":"/x"' 'prev: gets the same stdin'
 Remove-Item $p
 
@@ -47,5 +48,10 @@ Set-Content $st '{"model":"opus"}'
 $null = Run-Script 'statusline-install.ps1' @('install')
 $null = Run-Script 'statusline-install.ps1' @('uninstall')
 Assert-Eq '{"model":"opus"}' (Get-Content $st -Raw | ConvertFrom-Json | ConvertTo-Json -Compress) 'no previous: key removed'
+
+Set-Content $st '' -NoNewline
+$out = Run-Script 'statusline-install.ps1' @('install')
+Assert-Contains $out 'error=invalid-settings' 'invalid settings: error line'
+Assert-Eq '' ([IO.File]::ReadAllText($st)) 'invalid settings: file untouched'
 
 Finish 'statusline.Tests.ps1'

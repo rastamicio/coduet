@@ -11,5 +11,5 @@ $cl = Find-Claude
 if (-not $cl) { Add-Content $log "$(Now-Iso) ERROR no claude"; exit 1 }
 Add-Content $log "$(Now-Iso) START"
 # cmd closes stdin (< NUL): without a terminal claude would wait for it.
-$p = Start-Process -FilePath $env:ComSpec -ArgumentList '/d', '/s', '/c', "`"`"$cl`" $(Claude-ReturnArgs) < NUL >> `"$log`" 2>&1`"" -WorkingDirectory $Project -WindowStyle Hidden -PassThru -Wait
+$p = Start-Process -FilePath $env:ComSpec -ArgumentList '/d', '/s', '/c', "`"`"$cl`" $(Claude-ReturnArgs $Project) < NUL >> `"$log`" 2>&1`"" -WorkingDirectory $Project -WindowStyle Hidden -PassThru -Wait
 Add-Content $log "$(Now-Iso) END exit=$($p.ExitCode)"

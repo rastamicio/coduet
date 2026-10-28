@@ -18,7 +18,7 @@ if [ -z "$AT" ]; then
   AT="$(date -d "@$R" '+%Y-%m-%d %H:%M' 2>/dev/null || date -r "$R" '+%Y-%m-%d %H:%M')"
 fi
 echo "when=$AT"
-if [ -n "$DRY" ]; then echo "command=$(claude_return_cmd "$CL")"; exit 0; fi
+if [ -n "$DRY" ]; then echo "command=$(claude_return_cmd "$CL" "$PROJECT")"; exit 0; fi
 TOKEN="$(date +%s)$$"
 echo "$TOKEN" > "$CODUET_HOME/claude-return-$NAME.token"
 schedule_one "$AT" "$(printf '%q ' bash "$(dirname "$0")/claude-return.sh" "$PROJECT" "$TOKEN")" "claude-return"

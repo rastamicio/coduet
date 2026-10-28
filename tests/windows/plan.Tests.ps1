@@ -31,5 +31,8 @@ Assert-Contains $txt 'Implement Task 1 (Parser for the config file) of the plan 
 Assert-Contains $txt 'Do not commit.' 'handoff: rules'
 Assert-Contains $txt '(.env and similar)' 'handoff: secrets rule'
 Assert-Contains $txt 'npm run lint' 'handoff: verification commands'
+Assert-Contains $txt '**Base branch:** feature/config' 'handoff: task block inlined'
+Assert-Contains $txt '- [ ] Step 1: write the test' 'handoff: task steps inlined'
+Assert-NotContains $txt 'Token refresh' 'handoff: other tasks not inlined'
 
 Finish 'plan.Tests.ps1'

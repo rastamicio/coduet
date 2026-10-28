@@ -126,7 +126,8 @@ hhmm() { date -d "@$1" '+%H:%M' 2>/dev/null || date -r "$1" '+%H:%M'; }
 # Schedules a shell command once (at, systemd-run or a LaunchAgent). Prints scheduled=<label> via=… when=… or error.
 schedule_one() { # when command label
   local when="$1" cmd="$2" label="$3"
-  if command -v at >/dev/null 2>&1; then
+  # macOS ships "at" with its daemon off: jobs would never run, so it uses launchd below.
+  if command -v at >/dev/null 2>&1 && [ "$(uname)" != "Darwin" ]; then
     echo "$cmd" | at "$(date -d "$when" '+%H:%M %Y-%m-%d' 2>/dev/null || date -j -f '%Y-%m-%d %H:%M' "$when" '+%H:%M %m/%d/%Y')" 2>/dev/null && { echo "scheduled=$label via=at when=$when"; return 0; }
   fi
   if command -v systemd-run >/dev/null 2>&1; then
@@ -149,12 +150,19 @@ EOF
   echo "scheduled=$label via=none error=no-scheduler"; return 1
 }
 
-# The command that restarts Claude in a project after its quota resets (headless, limited permissions).
-claude_return_cmd() { # claude-path
-  local s="$PLUGIN_ROOT/scripts/unix"
+# The command that restarts Claude in a project after its quota resets (headless, limited permissions):
+# Coduet's scripts (quoted or not, as the skill runs them), read-only git, commit/merge/push without force,
+# worktree list/add/remove, and the plan's verification commands.
+claude_return_cmd() { # claude-path project
+  local s="$PLUGIN_ROOT/scripts/unix" plan v t
+  t="Bash(bash \"$s/:*),Bash(bash $s/:*),Bash(git status:*),Bash(git diff:*),Bash(git log:*),Bash(git add:*),Bash(git commit:*)"
+  t="$t,Bash(git merge:*),Bash(git worktree list:*),Bash(git worktree add:*),Bash(git worktree remove:*),Bash(git fetch:*),Bash(git push)"
+  plan="$(find_coduet_plan "$2")"
+  if [ -n "$plan" ]; then
+    while IFS= read -r v; do [ -n "$v" ] && t="$t,Bash($v),Bash($v:*)"; done < <(awk '/^## Verification commands/ { f = 1; next } /^#/ { f = 0 } f && NF' "$plan")
+  fi
   printf '%q -p %q --permission-mode acceptEdits --allowedTools %q' "$1" \
-    "Use the coduet:start skill: resume after Claude's quota reset." \
-    "Bash(bash $s/:*),Bash(git status:*),Bash(git diff:*),Bash(git log:*),Bash(git add:*),Bash(git commit:*),Bash(git merge:*),Bash(git worktree:*),Bash(git fetch:*),Bash(git push),Read,Edit,Write,Grep,Glob"
+    "Use the coduet:start skill: resume after Claude's quota reset." "$t,Read,Edit,Write,Grep,Glob"
 }
 
 # True if a yes/no parameter is switched on in .coduet.md or the personal coduet-config.
@@ -171,6 +179,6 @@ coduet_param_on() { # project-root regex
 notify() { # message
   if [ -n "$CODUET_NOTIFY" ]; then "$CODUET_NOTIFY" "$1"
   elif command -v osascript >/dev/null 2>&1; then osascript -e "display notification \"${1//\"/\\\"}\" with title \"Coduet\"" >/dev/null 2>&1
-  elif command -v notify-send >/dev/null 2>&1; then notify-send "Coduet" "$1"
+  elif command -v notify-send >/dev/null 2>&1 && notify-send "Coduet" "$1" 2>/dev/null; then :
   else { echo "$1" >> "$HOME/Desktop/coduet-avviso.txt"; } 2>/dev/null || echo "$1" >> "$HOME/coduet-avviso.txt"; fi
 }

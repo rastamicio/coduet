@@ -4,7 +4,7 @@
       { "hooks": [ { "type": "command", "command": "bash \"${CLAUDE_PLUGIN_ROOT}/scripts/hook.sh\" claude-quota-check", "timeout": 10 } ] }
     ],
     "StopFailure": [
-      { "matcher": "rate_limit", "hooks": [ { "type": "command", "command": "bash \"${CLAUDE_PLUGIN_ROOT}/scripts/hook.sh\" claude-limit-hit", "timeout": 60 } ] }
+      { "matcher": "rate_limit", "hooks": [ { "type": "command", "command": "bash \"${CLAUDE_PLUGIN_ROOT}/scripts/hook.sh\" claude-limit-hit", "timeout": 120 } ] }
     ]
   }
 }

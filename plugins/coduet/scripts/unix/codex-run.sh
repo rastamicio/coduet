@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Runs one Codex task in its own git worktree and records its status.
 #   codex-run.sh <project-folder> <task-name> <prompt-file> [--base <branch>] [--effort <low|medium|high>] [--max <n>]
-#                [--worktree-dir beside|inside] [--image <file>]...
+#                [--worktree-dir beside|inside] [--image <file>]... [--skip-quota-check]
 # Run it in the background: it ends with a single "CODEX ..." summary line (CODEX WAITING, exit 4, when Codex has no quota).
 # Codex runs in a detached worker, so it goes on (and records its outcome) even if this script or the Claude session stops.
 source "$(dirname "$0")/common.sh"
@@ -23,10 +23,10 @@ if [ "$1" = "--worker" ]; then # internal: --worker <task-file> <effort> <skip> 
 fi
 
 PROJECT="$(cd "$1" && pwd)"; TASK="$2"; PROMPT="$3"; shift 3
-BASE=""; EFFORT="medium"; MAX=2; WTDIR="beside"; IMGS=()
+BASE=""; EFFORT="medium"; MAX=2; WTDIR="beside"; IMGS=(); QCHECK=1
 while [ $# -gt 0 ]; do case "$1" in
   --base) BASE="$2"; shift 2;; --effort) EFFORT="$2"; shift 2;; --max) MAX="$2"; shift 2;; --image) IMGS+=(-i "$2"); shift 2;;
-  --worktree-dir) WTDIR="$2"; shift 2;;
+  --worktree-dir) WTDIR="$2"; shift 2;; --skip-quota-check) QCHECK=""; shift;;
   *) shift;; esac; done
 NAME="$(basename "$PROJECT")"
 TF="$(task_file "$NAME" "$TASK")"
@@ -36,8 +36,8 @@ if [ "$(active_count)" -ge "$MAX" ]; then
 fi
 
 # No quota left: don't start Codex (unknown = launch as before).
-LIM="$(bash "$(dirname "$0")/codex-limits.sh")"
-if echo "$LIM" | codex_available; [ $? -eq 1 ]; then
+[ -n "$QCHECK" ] && LIM="$(bash "$(dirname "$0")/codex-limits.sh")"
+if [ -n "$QCHECK" ] && { echo "$LIM" | codex_available; [ $? -eq 1 ]; }; then
   echo "CODEX WAITING task=$TASK reason=quota resets_at=$(echo "$LIM" | codex_reset_at)"; exit 4
 fi
 

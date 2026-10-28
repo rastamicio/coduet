@@ -1,11 +1,11 @@
 # Runs one Codex task in its own git worktree and records its status.
 #   codex-run.ps1 -Project <folder> -Task <name> -PromptFile <file> [-Base <branch>] [-Effort low|medium|high] [-Max <n>]
-#                 [-WorktreeDir beside|inside] [-Image <file1>,<file2>]
+#                 [-WorktreeDir beside|inside] [-Image <file1>,<file2>] [-SkipQuotaCheck]
 # Run it in the background: it ends with a single "CODEX ..." summary line (CODEX WAITING, exit 4, when Codex has no quota).
 # Codex runs in a detached worker, so it goes on (and records its outcome) even if this script or the Claude session stops.
 param(
   [string]$Project, [string]$Task, [string]$PromptFile, [string]$Base = '', [string]$Effort = 'medium', [int]$Max = 2,
-  [string]$WorktreeDir = 'beside', [string[]]$Image = @(), [switch]$Worker, [string]$TaskFile = ''
+  [string]$WorktreeDir = 'beside', [string[]]$Image = @(), [switch]$Worker, [string]$TaskFile = '', [switch]$SkipQuotaCheck
 )
 . (Join-Path $PSScriptRoot 'common.ps1')
 
@@ -35,8 +35,8 @@ $Name = Split-Path $Project -Leaf
 $TF = Task-File $Name $Task
 if ((Active-Count) -ge $Max) { "CODEX QUEUED task=$Task reason=max-$Max-active"; exit 3 }
 # No quota left: don't start Codex (unknown = launch as before).
-$lim = @(& powershell -NoProfile -ExecutionPolicy Bypass -File (Join-Path $PSScriptRoot 'codex-limits.ps1'))
-if ((Codex-Available $lim) -eq 'no') { "CODEX WAITING task=$Task reason=quota resets_at=$(Codex-ResetAt $lim)"; exit 4 }
+$lim = if ($SkipQuotaCheck) { @() } else { @(& powershell -NoProfile -ExecutionPolicy Bypass -File (Join-Path $PSScriptRoot 'codex-limits.ps1')) }
+if (-not $SkipQuotaCheck -and (Codex-Available $lim) -eq 'no') { "CODEX WAITING task=$Task reason=quota resets_at=$(Codex-ResetAt $lim)"; exit 4 }
 
 $WT = if ($WorktreeDir -in 'inside', 'dentro') { Join-Path $Project ".codex-worktrees\$Task" } else { Join-Path (Split-Path $Project -Parent) "$Name-codex-$Task" }
 Set-Location -LiteralPath $Project
