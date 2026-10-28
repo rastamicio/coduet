@@ -4,7 +4,9 @@
 D="$(cd "$(dirname "$0")" && pwd)"
 source "$D/common.sh"
 IN="$(cat)"
-[ "$(hook_field "$IN" error_type)" = "rate_limit" ] || exit 0
+# Claude Code puts the error type in "error" ("error_type" in some versions).
+ET="$(hook_field "$IN" error_type)"; [ -n "$ET" ] || ET="$(hook_field "$IN" error)"
+[ "$ET" = "rate_limit" ] || exit 0
 CWD="$(hook_field "$IN" cwd)"; [ -n "$CWD" ] || CWD="$PWD"
 PLAN="$(find_coduet_plan "$CWD")"; [ -n "$PLAN" ] || exit 0
 command -v codex >/dev/null 2>&1 || exit 0

@@ -10,8 +10,8 @@ new_repo() { # plan-fixture
   git -C "$r" init -q -b main && git -C "$r" -c user.email=t@t -c user.name=t commit -q --allow-empty -m init
   git -C "$r" branch feature/config; cp "$FIXTURES/$1" "$r/docs/plan.md"; echo "$r"
 }
-hit() { # dir error_type
-  printf '{"session_id":"s","hook_event_name":"StopFailure","cwd":"%s","error_type":"%s","error":"429"}' "$1" "$2" | bash "$LH"
+hit() { # dir error  (Claude Code sends the error type in "error")
+  printf '{"session_id":"s","hook_event_name":"StopFailure","cwd":"%s","error":"%s","last_assistant_message":"x"}' "$1" "$2" | bash "$LH"
 }
 
 R="$(new_repo plan-new.md)"

@@ -11,7 +11,7 @@ function New-Repo([string]$fixture) {
   Copy-Item (Join-Path $Fixtures $fixture) (Join-Path $r 'docs\plan.md'); return $r
 }
 function Hit([string]$dir, [string]$type) {
-  $j = '{"session_id":"s","hook_event_name":"StopFailure","cwd":' + ($dir | ConvertTo-Json) + ',"error_type":"' + $type + '","error":"429"}'
+  $j = '{"session_id":"s","hook_event_name":"StopFailure","cwd":' + ($dir | ConvertTo-Json) + ',"error":"' + $type + '","last_assistant_message":"x"}'
   $null = $j | & powershell -NoProfile -ExecutionPolicy Bypass -File $lh
 }
 function Same([string]$a, [string]$b) { (Get-FileHash $a).Hash -eq (Get-FileHash $b).Hash }

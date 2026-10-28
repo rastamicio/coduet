@@ -3,7 +3,9 @@
 . (Join-Path $PSScriptRoot 'common.ps1')
 $in = [Console]::In.ReadToEnd()
 $j = $null; try { $j = $in | ConvertFrom-Json } catch { exit 0 }
-if ($j.error_type -ne 'rate_limit') { exit 0 }
+# Claude Code puts the error type in "error" ("error_type" in some versions).
+$et = if ($j.error_type) { $j.error_type } else { $j.error }
+if ($et -ne 'rate_limit') { exit 0 }
 $cwd = if ($j.cwd) { $j.cwd } else { (Get-Location).Path }
 $plan = Find-CoduetPlan $cwd; if (-not $plan) { exit 0 }
 if (-not (Get-Command codex -ErrorAction SilentlyContinue)) { exit 0 }
