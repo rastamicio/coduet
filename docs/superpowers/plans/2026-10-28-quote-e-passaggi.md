@@ -203,4 +203,10 @@ Nessun codice del plugin. Si esegue sul PC di Windows (sessione sul PC o Remote 
 
 ## Esiti delle verifiche
 
-(Da compilare nel Task 0.)
+Prove sul PC Windows 11 di Tia, 28/10/2026.
+
+- **Step 1, comandi degli hook:** con `claude` nel terminale gli hook girano in Git Bash (`$0=/usr/bin/bash`): `bash "${CLAUDE_PLUGIN_ROOT}/scripts/hook.sh" <nome>` funziona e passa lo stdin allo script PowerShell. Prova completa con `claude-quota-check`: avviso dato una sola volta. Nell'app desktop non ancora provato.
+- **Step 2, `StopFailure`:** scatta in `claude -p` (provato con un modello inesistente). Il tipo di errore è nel campo `error`, non `error_type`: gli script leggono entrambi. Nell'app desktop non ancora provato.
+- **Step 3, timeout della domanda:** non provato. Lo Step 7 contiene già il ripiego (senza risveglio, Claude aspetta la risposta).
+- **Step 4, `claude -p` dal pianificatore:** riuscito. Un'attività una tantum ha avviato `claude -p ... --permission-mode acceptEdits --allowedTools "Write,Bash(git status:*)" < NUL`: file creato, `git status` eseguito senza richieste, nessuna finestra rimasta aperta, circa 20 s. Nota: nelle sessioni Remote Control il classificatore della modalità automatica blocca `Register-ScheduledTask`, quindi l'attività di prova l'ha registrata l'utente.
+- **Suite di test:** Linux e Windows tutte verdi (Windows su 1535596).

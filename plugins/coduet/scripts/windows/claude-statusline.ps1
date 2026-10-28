@@ -3,7 +3,7 @@
 $h = if ($env:CODUET_HOME) { $env:CODUET_HOME } else { Join-Path $env:USERPROFILE '.coduet' }
 $utf8 = New-Object Text.UTF8Encoding $false
 [Console]::OutputEncoding = $utf8; $OutputEncoding = $utf8
-# Raw bytes decoded as UTF-8 (Claude Code sends UTF-8): setting [Console]::InputEncoding loses the piped stdin on PowerShell 5.1.
+# Raw bytes decoded as UTF-8 (Claude Code sends UTF-8): with [Console]::InputEncoding set, the tests got an empty stdin on PowerShell 5.1.
 $ms = New-Object IO.MemoryStream; [Console]::OpenStandardInput().CopyTo($ms); $in = $utf8.GetString($ms.ToArray()).TrimStart([char]0xFEFF)
 $rl = $null
 try { $rl = ($in | ConvertFrom-Json).rate_limits } catch { }
