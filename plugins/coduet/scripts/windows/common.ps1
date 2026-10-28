@@ -60,3 +60,24 @@ function Codex-HitLimit([string]$out) {
   if (-not (Test-Path $out)) { return $false }
   return [bool](Select-String -Path $out -Pattern 'usage limit|rate limit|limit reached' -Quiet)
 }
+
+# Reads codex-limits output lines. 'yes' = Codex has quota, 'no' = used up, 'unknown' = could not read.
+function Limits-Map([string[]]$lines) {
+  $m = @{}
+  foreach ($l in $lines) { $i = $l.IndexOf('='); if ($i -gt 0) { $m[$l.Substring(0, $i)] = $l.Substring($i + 1) } }
+  return $m
+}
+function Codex-Available([string[]]$lines) {
+  $m = Limits-Map $lines
+  if ($m['ok'] -ne '1') { return 'unknown' }
+  $p = [double]('0' + $m['primary_used']); $s = [double]('0' + $m['secondary_used'])
+  if (-not $m['reached'] -and $p -lt 100 -and $s -lt 100) { return 'yes' } else { return 'no' }
+}
+# resets_at of the used-up window (secondary if both), or ''.
+function Codex-ResetAt([string[]]$lines) {
+  $m = Limits-Map $lines
+  $p = [double]('0' + $m['primary_used']); $s = [double]('0' + $m['secondary_used'])
+  if ($s -ge 100 -or $m['reached'] -eq 'secondary') { return $m['secondary_resets_at'] }
+  if ($p -ge 100 -or $m['reached']) { return $m['primary_resets_at'] }
+  return ''
+}

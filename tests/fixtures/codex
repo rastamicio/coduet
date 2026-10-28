@@ -1,0 +1,24 @@
+#!/usr/bin/env bash
+# Fake Codex CLI for tests. FAKE_CODEX_MODE: ok | reached | silent | noserver.
+mode="${FAKE_CODEX_MODE:-ok}"
+case "$1" in
+  app-server)
+    [ "$mode" = noserver ] && { echo "error: unrecognized subcommand 'app-server'" >&2; exit 2; }
+    while IFS= read -r line; do
+      [ "$mode" = silent ] && continue
+      case "$line" in
+        *'"method":"initialize"'*) echo '{"id":1,"result":{"userAgent":"fake/0.0.0"}}' ;;
+        *'account/rateLimits/read'*)
+          if [ "$mode" = reached ]; then p=100; r='"primary"'; else p=30; r=null; fi
+          echo "{\"id\":2,\"result\":{\"rateLimits\":{\"limitId\":\"codex\",\"primary\":{\"usedPercent\":$p,\"windowDurationMins\":300,\"resetsAt\":1793210994},\"secondary\":{\"usedPercent\":10,\"windowDurationMins\":10080,\"resetsAt\":1793779590},\"planType\":\"plus\",\"rateLimitReachedType\":$r}}}" ;;
+      esac
+    done ;;
+  exec)
+    [ -n "$FAKE_CODEX_MARKER" ] && echo "exec $*" >> "$FAKE_CODEX_MARKER"
+    cat > /dev/null
+    echo "session id: fake-1"
+    echo "tokens used"
+    echo "1234" ;;
+  --version) echo "codex-cli 0.163.0" ;;
+esac
+exit 0
