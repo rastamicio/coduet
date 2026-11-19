@@ -38,7 +38,13 @@ Coduet è stato verificato su Windows 11 con Codex CLI 0.163.0. Su macOS e Linux
 
 ## Installazione
 
-1. **Installa Codex CLI** e fai il login con l'account ChatGPT (`codex login`). La [guida completa](docs/guida.md#3-guida-allinstallazione-windows) spiega i passi e le prove da fare.
+1. **Installa Codex CLI e collegalo al tuo account ChatGPT.** Il plugin non lo fa al posto tuo: Codex è un programma a parte, da installare sul PC.
+   - Windows (PowerShell, senza privilegi di amministratore): `powershell -ExecutionPolicy ByPass -c "irm https://chatgpt.com/codex/install.ps1 | iex"`
+   - macOS / Linux: `curl -fsSL https://chatgpt.com/codex/install.sh | sh`
+
+   Riapri il terminale e scrivi `codex login`: si apre il browser, accedi con il tuo account ChatGPT (oppure usa una chiave API). Poi `codex login status` deve rispondere `Logged in using ChatGPT`. Su Windows avvia `codex` una volta in una cartella di prova per preparare la sandbox. La [guida completa](docs/guida.md#3-guida-allinstallazione-windows) spiega ogni passo e le prove da fare.
+
+   Se installi prima il plugin va bene lo stesso: all'avvio Coduet si accorge che Codex manca o non è collegato, ti dà i comandi e intanto lavora con il solo Claude.
 2. **Installa Coduet** in una sessione di Claude Code:
 
    ```

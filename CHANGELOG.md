@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.6.1
+
+- **Installare Codex è spiegato meglio**: il README dice chiaramente che il plugin non installa Codex e non collega l'account ChatGPT, e al passo 1 dà i comandi di installazione per Windows e per macOS/Linux, il login (`codex login`, `codex login status`) e il primo avvio per la sandbox su Windows. Se installi prima il plugin va bene lo stesso.
+- All'avvio, se Codex manca o non è collegato, Coduet ti mostra il comando giusto per il tuo sistema invece di dire solo che manca.
+
 ## 0.6.0
 
 - **La quota di Claude è protetta**: nel piano ogni task di Claude dice se è *pronto per Codex* (tutti tranne sicurezza, segreti e migrazioni del database). Nel terminale, con la nuova barra di stato di Coduet (si accende dalle impostazioni e mantiene quella che avevi), Claude viene avvisato all'80% della quota e propone di prestare quei task a Codex: se non rispondi entro 5 minuti li presta da solo. Quando Claude arriva al limite, anche nell'app desktop, uno script li presta a Codex senza spendere token di Claude e ti avvisa sul PC.
