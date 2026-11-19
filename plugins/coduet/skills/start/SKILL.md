@@ -113,7 +113,7 @@ Ask with AskUserQuestion: "Split the work with Codex?" — Yes, full split / Onl
 
 ## Step 1: Codex check
 
-`codex --version` and `codex login status`. Missing or logged out → say so, go on without Codex. Verified with Codex CLI **0.163.0**: on another version, check `codex exec --help` and `codex exec resume --help` still have `--sandbox workspace-write`, `--cd`, `-o`, `-c`, `resume <id> <prompt>`; adapt and note it for Step 9. If Claude Code asks permission at every Codex launch, offer to allow the Coduet scripts once (project permission rule); nothing else. Before assigning a lot to Codex, ask how much quota is left (`/status` in Codex or chatgpt.com/settings/usage).
+`codex --version` and `codex login status`. Missing or logged out → say so with the install command for the system (Windows `irm https://chatgpt.com/codex/install.ps1 | iex`, macOS/Linux `curl -fsSL https://chatgpt.com/codex/install.sh | sh`) or `codex login`, then go on without Codex. Verified with Codex CLI **0.163.0**: on another version, check `codex exec --help` and `codex exec resume --help` still have `--sandbox workspace-write`, `--cd`, `-o`, `-c`, `resume <id> <prompt>`; adapt and note it for Step 9. If Claude Code asks permission at every Codex launch, offer to allow the Coduet scripts once (project permission rule); nothing else. Before assigning a lot to Codex, ask how much quota is left (`/status` in Codex or chatgpt.com/settings/usage).
 
 ## Step 2: brainstorm (new project only)
 
